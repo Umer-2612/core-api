@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  super_admin
+  hiring_manager
+}
+
+enum JobStatus {
+  active
+  done
+}
+
+enum CandidateStatus {
+  uploaded
+  invited
+  scheduled
+  interviewed
+  analysed
+  shortlisted
+  rejected
+  no_show
+}
+
+enum SessionStatus {
+  scheduled
+  in_progress
+  completed
+  expired
+  no_show
+}
+
+model Company {
+  id         String   @id @default(uuid())
+  name       String
+  slug       String   @unique
+  logo_url   String?
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  users       User[]
+  invitations Invitation[]
+  jobs        Job[]
+  candidates  Candidate[]
+
+  @@map("companies")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  company_id    String
+  full_name     String
+  email         String   @unique
+  password_hash String
+  role          UserRole
+  invited_by    String?
+  avatar_url    String?
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([company_id])
+  @@map("users")
+}
+
+model Invitation {
+  id                   String    @id @default(uuid())
+  company_id           String?
+  email                String
+  role                 UserRole
+  token                String    @unique
+  invited_by           String?
+  expires_at           DateTime
+  accepted_at          DateTime?
+  created_at           DateTime  @default(now())
+  pending_company_name String?
+  pending_company_slug String?
+
+  company Company? @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([company_id, email])
+  @@map("invitations")
+}
+
+model Job {
+  id          String    @id @default(uuid())
+  company_id  String
+  created_by  String?
+  title       String
+  jd_raw_text String?
+  jd_file_url String?
+  status      JobStatus @default(active)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  company    Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  candidates Candidate[]
+
+  @@index([company_id])
+  @@map("jobs")
+}
+
+model Candidate {
+  id              String           @id @default(uuid())
+  job_id          String
+  company_id      String
+  full_name       String
+  email           String?
+  phone           String?
+  resume_file_url String?
+  resume_parsed   Json?
+  status          CandidateStatus  @default(uploaded)
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+
+  job      Job                @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  company  Company            @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  sessions InterviewSession[]
+
+  @@index([job_id])
+  @@index([company_id])
+  @@map("candidates")
+}
+
+// Session state machine: scheduled -> in_progress -> completed (see platform repo README, section 8)
+model InterviewSession {
+  id             String        @id @default(uuid())
+  candidate_id   String
+  job_id         String
+  invite_token   String?       @unique
+  scheduled_at   DateTime?
+  started_at     DateTime?
+  completed_at   DateTime?
+  invite_sent_at DateTime?
+  status         SessionStatus @default(scheduled)
+  created_at     DateTime      @default(now())
+
+  candidate Candidate @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+
+  @@index([candidate_id])
+  @@map("interview_sessions")
+}
