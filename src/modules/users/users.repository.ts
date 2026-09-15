@@ -14,7 +14,6 @@ export interface UpdateUserData {
   full_name?: string;
   role?: UserRole;
   is_active?: boolean;
-  avatar_url?: string | null;
 }
 
 export interface IUsersRepository {

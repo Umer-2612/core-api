@@ -39,7 +39,6 @@ export interface PublicUser {
   full_name: string;
   email: string;
   role: UserRole;
-  avatar_url: string | null;
   is_active: boolean;
   created_at: Date;
 }
@@ -51,7 +50,6 @@ export const toPublicUser = (user: UserRecord): PublicUser => ({
   full_name: user.full_name,
   email: user.email,
   role: user.role,
-  avatar_url: user.avatar_url,
   is_active: user.is_active,
   created_at: user.created_at,
 });
