@@ -3,31 +3,9 @@
  * shapes (unlike Mongoose, there's no lean()/ObjectId mapping needed), so we
  * re-export its types directly instead of hand-rolling duplicates.
  */
-import type {
-  Candidate,
-  CandidateStatus,
-  Company,
-  Invitation,
-  InterviewSession,
-  Job,
-  JobStatus,
-  SessionStatus,
-  User,
-  UserRole,
-} from "@prisma/client";
+import type { Company, Invitation, User, UserRole } from "@prisma/client";
 
-export type {
-  Candidate,
-  CandidateStatus,
-  Company,
-  Invitation,
-  InterviewSession,
-  Job,
-  JobStatus,
-  SessionStatus,
-  User,
-  UserRole,
-};
+export type { Company, Invitation, User, UserRole };
 
 /** Full user row, including the password hash. Never send this to a client. */
 export type UserRecord = User;
@@ -53,13 +31,3 @@ export const toPublicUser = (user: UserRecord): PublicUser => ({
   is_active: user.is_active,
   created_at: user.created_at,
 });
-
-/** Shape produced by resume-extractor.ts, stored as JSON on Candidate.resume_parsed. */
-export interface ParsedResume {
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  skills: string[];
-  experience: Array<{ company: string; role: string; years: string; bullets?: string[] }>;
-  summary: string | null;
-}
