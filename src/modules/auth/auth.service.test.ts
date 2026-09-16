@@ -39,7 +39,7 @@ function makeInvitation(overrides: Partial<Invitation> = {}): Invitation {
   };
 }
 
-/** In-memory fakes, not spies — enough to drive AuthService's real branches. */
+/** In-memory fakes, not spies, enough to drive AuthService's real branches. */
 class FakeUsersRepository implements IUsersRepository {
   users: UserRecord[] = [];
   async findById(id: string) {
@@ -53,6 +53,9 @@ class FakeUsersRepository implements IUsersRepository {
   }
   async existsByEmail(email: string) {
     return this.users.some((u) => u.email === email);
+  }
+  async existsByRole(role: UserRecord["role"]) {
+    return this.users.some((u) => u.role === role);
   }
   async create(data: Parameters<IUsersRepository["create"]>[0]) {
     const user = makeUser({ id: `user-${this.users.length + 1}`, ...data });
@@ -256,6 +259,23 @@ describe("AuthService", () => {
       await expect(
         service.setPassword({ token: "tok-1", full_name: "X", password: "abc12345" }),
       ).rejects.toMatchObject({ status: 500 });
+    });
+  });
+
+  describe("bootstrapAdmin", () => {
+    it("creates the super admin from SUPER_ADMIN_* env vars when none exists yet", async () => {
+      const result = await service.bootstrapAdmin();
+
+      expect(result.user.role).toBe("super_admin");
+      expect(result.user.email).toBe("admin@test.local");
+      expect(companies.createWithUserCalls).toHaveLength(1);
+      expect(companies.createWithUserCalls[0].role).toBe("super_admin");
+      expect(result.token).toBeTruthy();
+    });
+
+    it("refuses to run if a super_admin already exists", async () => {
+      users.users.push(makeUser({ role: "super_admin" }));
+      await expect(service.bootstrapAdmin()).rejects.toMatchObject({ status: 409 });
     });
   });
 });
