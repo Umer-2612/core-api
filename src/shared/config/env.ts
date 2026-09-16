@@ -30,12 +30,7 @@ const EnvSchema = z
     CREDENTIALS: booleanFromString(true),
     CORS_ORIGINS: z.string().optional(),
 
-    // Pooled connection (app runtime queries) and direct connection (migrations).
-    // With Supabase: DATABASE_URL is the pgbouncer pooler (port 6543), DIRECT_URL
-    // is the direct connection (port 5432). Falls back to DATABASE_URL if
-    // DIRECT_URL isn't set, e.g. a plain local Postgres with no pooler at all.
     DATABASE_URL: z.string().min(1),
-    DIRECT_URL: z.string().min(1).optional(),
 
     FRONTEND_URL: z.string().url().default("http://localhost:3000"),
     INVITATION_EXPIRY_HOURS: z.coerce.number().int().positive().default(48),
@@ -74,7 +69,6 @@ export const LOG_LEVEL = env.LOG_LEVEL;
 export const CREDENTIALS = env.CREDENTIALS;
 
 export const DATABASE_URL = env.DATABASE_URL;
-export const DIRECT_URL = env.DIRECT_URL ?? env.DATABASE_URL;
 
 export const FRONTEND_URL = env.FRONTEND_URL;
 export const INVITATION_EXPIRY_HOURS = env.INVITATION_EXPIRY_HOURS;
