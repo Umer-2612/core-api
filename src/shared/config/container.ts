@@ -27,7 +27,7 @@ export function setupContainer() {
 
   // Business layer: services.
   const emailService = new EmailService();
-  const authService = new AuthService(usersRepository, invitationsRepository);
+  const authService = new AuthService(usersRepository, invitationsRepository, companiesRepository);
   const invitationsService = new InvitationsService(
     invitationsRepository,
     usersRepository,

@@ -2,6 +2,8 @@ import { sign } from "jsonwebtoken";
 import { container } from "tsyringe";
 import type { SetPasswordDto } from "@modules/auth/auth.dto";
 import type { DataStoredInToken, TokenData } from "@modules/auth/auth.interface";
+import { CompaniesRepository } from "@modules/companies/companies.repository";
+import type { ICompaniesRepository } from "@modules/companies/companies.repository";
 import type { IInvitationsRepository } from "@modules/invitations/invitations.repository";
 import { InvitationsRepository } from "@modules/invitations/invitations.repository";
 import type { IUsersRepository } from "@modules/users/users.repository";
@@ -11,15 +13,20 @@ import { HttpException } from "@shared/exceptions/http.exception";
 import { type PublicUser, toPublicUser, type UserRecord } from "@shared/interfaces/models.interface";
 import { Hash } from "@shared/utils/hash";
 import { logger } from "@shared/utils/logger";
-import { prisma } from "@/db/prisma";
 
 export class AuthService {
   private readonly usersRepository: IUsersRepository;
   private readonly invitationsRepository: IInvitationsRepository;
+  private readonly companiesRepository: ICompaniesRepository;
 
-  constructor(usersRepository?: IUsersRepository, invitationsRepository?: IInvitationsRepository) {
+  constructor(
+    usersRepository?: IUsersRepository,
+    invitationsRepository?: IInvitationsRepository,
+    companiesRepository?: ICompaniesRepository,
+  ) {
     this.usersRepository = usersRepository ?? container.resolve(UsersRepository);
     this.invitationsRepository = invitationsRepository ?? container.resolve(InvitationsRepository);
+    this.companiesRepository = companiesRepository ?? container.resolve(CompaniesRepository);
   }
 
   // --- Token / cookie helpers ---------------------------------------------
@@ -70,8 +77,9 @@ export class AuthService {
 
   /**
    * Accepts an invitation: validates the one-time token, creates the user with
-   * the chosen password, marks the invitation accepted, and logs them in.
-   * For hiring_manager invites, a new Company is created in the same transaction.
+   * the chosen password, marks the invitation accepted, and logs them in. For
+   * a hiring_manager invite with no company yet, a new Company is created
+   * atomically with the user via companiesRepository.createWithUser.
    */
   public async setPassword(data: SetPasswordDto): Promise<{ cookie: string; token: string; user: PublicUser }> {
     const invitation = await this.invitationsRepository.findByToken(data.token);
@@ -91,29 +99,27 @@ export class AuthService {
         throw new HttpException(500, "Invitation is missing company details");
       }
       try {
-        user = await prisma.$transaction(async (tx) => {
-          const company = await tx.company.create({
-            data: { name: invitation.pending_company_name!, slug: invitation.pending_company_slug! },
-          });
-          const newUser = await tx.user.create({
-            data: {
-              company_id: company.id,
-              full_name: data.full_name,
-              email: invitation.email,
-              password_hash: passwordHash,
-              role: invitation.role,
-              invited_by: invitation.invited_by,
-            },
-          });
-          await tx.invitation.update({ where: { id: invitation.id }, data: { accepted_at: new Date() } });
-          return newUser;
+        const created = await this.companiesRepository.createWithUser({
+          companyName: invitation.pending_company_name,
+          companySlug: invitation.pending_company_slug,
+          fullName: data.full_name,
+          email: invitation.email,
+          passwordHash,
+          role: invitation.role,
+          invitedBy: invitation.invited_by,
         });
+        user = created.user;
       } catch (err: unknown) {
         // Postgres unique-violation (e.g. company slug already taken)
         const code = (err as { code?: string }).code;
         if (code === "P2002") throw new HttpException(409, "A company with this name already exists");
         throw err;
       }
+      // Not part of the company+user transaction above (that's owned by
+      // CompaniesRepository, not InvitationsRepository) — a small window where
+      // the user exists but the invite isn't marked accepted yet. Acceptable:
+      // worst case is the invite link still resolves once more, harmlessly.
+      await this.invitationsRepository.markAccepted(invitation.id, new Date());
     } else {
       const companyId = invitation.company_id;
       if (!companyId) throw new HttpException(500, "Could not resolve company for this invitation");
