@@ -18,19 +18,27 @@ was the wrong order.
 
 ## Quick start
 
-This repo doesn't hold its own `.env`, by design, see the `platform` repo for how secrets get
-injected. For standalone local development against this repo alone:
+Secrets live in Infisical, not in a `.env` file. `.env.example` documents what variables exist,
+it's not something to copy.
 
 ```bash
-npm install
-npx prisma generate
+# one-time per machine
+brew install infisical/get-cli/infisical
+infisical login
 
-# needs DATABASE_URL, SECRET_KEY, FRONTEND_URL, and the SUPER_ADMIN_* vars (see .env.example)
-# at minimum, whichever way you inject them (platform's bootstrap, or your own shell env)
-npx prisma migrate dev
-npm run seed:admin
-npm run dev              # http://localhost:4000, API prefix /api/v1
+# one-time per clone of this repo (already done, .infisical.json is committed)
+infisical init
+
+npm install
+npm run prisma:migrate    # runs `prisma migrate dev` with secrets injected
+npm run seed:admin        # same, for the seed script
+npm run dev               # http://localhost:4000, API prefix /api/v1
 ```
+
+Every script in `package.json` that needs secrets is already wrapped as
+`infisical run --env dev -- <command>`, so `npm run dev` etc. just work once you're logged in.
+Postgres itself still needs to actually be running, `docker compose up -d postgres` (from this
+repo's own `docker-compose.yml`) before `prisma:migrate`/`dev`/`seed:admin`.
 
 ## Structure
 
