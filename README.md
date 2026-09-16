@@ -19,8 +19,8 @@ was the wrong order.
 
 ## Quick start
 
-Secrets live in Infisical, not in a `.env` file. `.env.example` documents what variables exist,
-it's not something to copy.
+Secrets live in Infisical, not in a `.env` file. See the project's dev environment in the
+Infisical dashboard for the current variable list, values are never written to disk locally.
 
 ```bash
 # one-time per machine
