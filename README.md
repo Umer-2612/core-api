@@ -4,7 +4,8 @@ Auth flow: login, invite-accept, orgs. Jobs, candidates, and interview sessions 
 now, they're coming back once their schema is actually settled, not carried over wholesale from
 the reference repo again.
 
-Full plan: see the `platform` repo's README (sibling folder).
+Full plan: see the `platform` repo's README (sibling folder). API endpoints and the database
+schema: see `API.md`.
 
 ## Status
 
