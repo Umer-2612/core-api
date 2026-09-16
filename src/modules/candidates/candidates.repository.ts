@@ -12,7 +12,6 @@ export interface CreateCandidateData {
   full_name: string;
   email?: string | null;
   phone?: string | null;
-  resume_file_url?: string | null;
   resume_parsed?: ParsedResume | null;
 }
 
@@ -20,7 +19,6 @@ export interface UpdateCandidateData {
   full_name?: string;
   email?: string | null;
   phone?: string | null;
-  resume_file_url?: string | null;
   resume_parsed?: ParsedResume | null;
   status?: CandidateStatus;
 }
@@ -60,7 +58,6 @@ export class CandidatesRepository implements ICandidatesRepository {
         full_name: data.full_name,
         email: data.email ?? null,
         phone: data.phone ?? null,
-        resume_file_url: data.resume_file_url ?? null,
         resume_parsed: toJsonInput(data.resume_parsed),
       },
     });

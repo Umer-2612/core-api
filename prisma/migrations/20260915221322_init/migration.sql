@@ -5,7 +5,7 @@ CREATE TYPE "UserRole" AS ENUM ('super_admin', 'hiring_manager');
 CREATE TYPE "JobStatus" AS ENUM ('active', 'done');
 
 -- CreateEnum
-CREATE TYPE "CandidateStatus" AS ENUM ('uploaded', 'invited', 'scheduled', 'interviewed', 'analysed', 'shortlisted', 'rejected', 'no_show');
+CREATE TYPE "CandidateStatus" AS ENUM ('uploaded', 'scheduled', 'interviewed', 'rejected', 'no_show');
 
 -- CreateEnum
 CREATE TYPE "SessionStatus" AS ENUM ('scheduled', 'in_progress', 'completed', 'expired', 'no_show');
@@ -15,8 +15,6 @@ CREATE TABLE "companies" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
-    "logo_url" TEXT,
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "companies_pkey" PRIMARY KEY ("id")
@@ -31,7 +29,6 @@ CREATE TABLE "users" (
     "password_hash" TEXT NOT NULL,
     "role" "UserRole" NOT NULL,
     "invited_by" TEXT,
-    "avatar_url" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -62,7 +59,6 @@ CREATE TABLE "jobs" (
     "created_by" TEXT,
     "title" TEXT NOT NULL,
     "jd_raw_text" TEXT,
-    "jd_file_url" TEXT,
     "status" "JobStatus" NOT NULL DEFAULT 'active',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -78,7 +74,6 @@ CREATE TABLE "candidates" (
     "full_name" TEXT NOT NULL,
     "email" TEXT,
     "phone" TEXT,
-    "resume_file_url" TEXT,
     "resume_parsed" JSONB,
     "status" "CandidateStatus" NOT NULL DEFAULT 'uploaded',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -96,7 +91,6 @@ CREATE TABLE "interview_sessions" (
     "scheduled_at" TIMESTAMP(3),
     "started_at" TIMESTAMP(3),
     "completed_at" TIMESTAMP(3),
-    "invite_sent_at" TIMESTAMP(3),
     "status" "SessionStatus" NOT NULL DEFAULT 'scheduled',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

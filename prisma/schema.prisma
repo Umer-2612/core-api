@@ -17,13 +17,14 @@ enum JobStatus {
   done
 }
 
+// Only states our code actually sets: `uploaded` on create, `scheduled` when a
+// session is created, the rest via the manual PATCH a hiring manager makes
+// after an interview. No `invited` (no separate apply-invite flow), no
+// `analysed`/`shortlisted` (those imply features we haven't built).
 enum CandidateStatus {
   uploaded
-  invited
   scheduled
   interviewed
-  analysed
-  shortlisted
   rejected
   no_show
 }
@@ -40,8 +41,6 @@ model Company {
   id         String   @id @default(uuid())
   name       String
   slug       String   @unique
-  logo_url   String?
-  is_active  Boolean  @default(true)
   created_at DateTime @default(now())
 
   users       User[]
@@ -60,7 +59,6 @@ model User {
   password_hash String
   role          UserRole
   invited_by    String?
-  avatar_url    String?
   is_active     Boolean  @default(true)
   created_at    DateTime @default(now())
 
@@ -95,7 +93,6 @@ model Job {
   created_by  String?
   title       String
   jd_raw_text String?
-  jd_file_url String?
   status      JobStatus @default(active)
   created_at  DateTime  @default(now())
   updated_at  DateTime  @updatedAt
@@ -108,17 +105,16 @@ model Job {
 }
 
 model Candidate {
-  id              String           @id @default(uuid())
-  job_id          String
-  company_id      String
-  full_name       String
-  email           String?
-  phone           String?
-  resume_file_url String?
-  resume_parsed   Json?
-  status          CandidateStatus  @default(uploaded)
-  created_at      DateTime         @default(now())
-  updated_at      DateTime         @updatedAt
+  id            String          @id @default(uuid())
+  job_id        String
+  company_id    String
+  full_name     String
+  email         String?
+  phone         String?
+  resume_parsed Json?
+  status        CandidateStatus @default(uploaded)
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
 
   job      Job                @relation(fields: [job_id], references: [id], onDelete: Cascade)
   company  Company            @relation(fields: [company_id], references: [id], onDelete: Cascade)
@@ -131,16 +127,15 @@ model Candidate {
 
 // Session state machine: scheduled -> in_progress -> completed (see platform repo README, section 8)
 model InterviewSession {
-  id             String        @id @default(uuid())
-  candidate_id   String
-  job_id         String
-  invite_token   String?       @unique
-  scheduled_at   DateTime?
-  started_at     DateTime?
-  completed_at   DateTime?
-  invite_sent_at DateTime?
-  status         SessionStatus @default(scheduled)
-  created_at     DateTime      @default(now())
+  id           String        @id @default(uuid())
+  candidate_id String
+  job_id       String
+  invite_token String?       @unique
+  scheduled_at DateTime?
+  started_at   DateTime?
+  completed_at DateTime?
+  status       SessionStatus @default(scheduled)
+  created_at   DateTime      @default(now())
 
   candidate Candidate @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
 
