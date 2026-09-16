@@ -1,60 +1,87 @@
 # core-api
 
-Auth flow: login, invite-accept, orgs. Jobs, candidates, and interview sessions were removed for
-now, they're coming back once their schema is actually settled, not carried over wholesale from
-the reference repo again.
+Backend service for the Interview Platform. Handles authentication and organizations.
 
-Full plan: see the `platform` repo's README (sibling folder). API endpoints and the database
-schema: see `API.md`.
+## What this service does
 
-## Status
+- Authentication: login, invite-based account creation, session lookup, logout.
+- Organizations ("companies"): every user belongs to exactly one company.
+- Invitations: the only way a new account gets created. There is no public signup form.
 
-Built and type-checked: login, invite-a-hiring-manager (creates a company + user in one
-transaction on accept), `/me`, logout.
+Two roles exist: `super_admin` (the platform owner, one account, created by a seed script, not
+through any API) and `hiring_manager` (created only by accepting an invitation, either into an
+existing company or founding a new one).
 
-Deliberately out of scope right now: jobs, candidates, resume parsing, interview sessions,
-scorecards. These existed in an earlier pass and were removed, not because the ideas were wrong,
-but because building them again before the auth flow itself was verified and the schema settled
-was the wrong order.
+Full endpoint list and database schema: see `API.md`.
 
-## Quick start
+## Prerequisites
 
-Secrets live in Infisical, not in a `.env` file. See the project's dev environment in the
-Infisical dashboard for the current variable list, values are never written to disk locally.
+- `git`
+- `docker` and `docker compose`
+- the [Infisical CLI](https://infisical.com/docs/cli/overview): `brew install infisical/get-cli/infisical`
+
+Node.js is not required on your machine. This service runs inside a container; secrets are
+never stored in a file, they're fetched from Infisical at startup.
+
+## Running this service
+
+This service is normally started as part of the whole project, see the `platform` repo's
+README for the one-command setup that runs every service together.
+
+To run just this service on its own:
 
 ```bash
-# one-time per machine
-brew install infisical/get-cli/infisical
-infisical login
-
-# one-time per clone of this repo (already done, .infisical.json is committed)
-infisical init
-
-npm install
-npm run prisma:migrate    # runs `prisma migrate dev` with secrets injected
-npm run seed:admin        # same, for the seed script
-npm run dev               # http://localhost:4000, API prefix /api/v1
+infisical login          # once per machine
+infisical init            # once per clone; links this folder to the Infisical project
+infisical run --env dev -- docker compose up --build
 ```
 
-Every script in `package.json` that needs secrets is already wrapped as
-`infisical run --env dev -- <command>`, so `npm run dev` etc. just work once you're logged in.
-Postgres itself still needs to actually be running, `docker compose up -d postgres` (from this
-repo's own `docker-compose.yml`) before `prisma:migrate`/`dev`/`seed:admin`.
+The API is available at `http://localhost:4000`, all routes under `/api/v1`.
 
-## Structure
+To run it without Docker (requires Node.js 20+ installed locally):
 
-Same layering as `Interview-Platform-Backend`, the reference repo this was ported from:
-`routes -> controller -> service -> repository -> Postgres (Prisma)`, wired with `tsyringe` DI
-(see `src/shared/config/container.ts`). Modules: `auth`, `invitations`, `users`, `companies`.
-Swapped throughout: Mongoose/MongoDB for Prisma/Postgres.
+```bash
+npm install
+infisical run --env dev -- npm run prisma:migrate
+infisical run --env dev -- npm run dev
+```
 
-## Data model
+## Creating the first account
 
-One Postgres database (`prisma/schema.prisma`): `Company`, `User`, `Invitation`. That's it for
-now.
+There is no signup form. The first account (the super admin) is created by running:
 
-## Next
+```bash
+infisical run --env dev -- npm run seed:admin
+```
 
-Once the auth flow is verified end to end (including in `web-frontend`), bring jobs/candidates/
-interview-sessions back one at a time, each with its schema decided deliberately rather than
-lifted wholesale.
+Every other account is created by an existing admin sending an invitation; the invited person
+accepts it through `web-frontend`'s `/invite/[token]` page, which calls this service's
+`POST /auth/set-password`.
+
+## Database
+
+One Postgres database, hosted on Supabase, shared across every repo in this project. This
+service owns three tables: `companies`, `users`, `invitations`. Full schema and relationships:
+see `API.md`.
+
+## Tests
+
+```bash
+npm run test
+```
+Runs without a database connection; the test suite uses in-memory fakes for data access.
+
+## Code structure
+
+```
+src/
+  modules/     one folder per domain area: auth, invitations, users, companies, email
+  shared/      config, middleware, shared types, utilities
+  db/          Postgres connection setup (Prisma)
+  app.ts       Express app (middleware, routes, error handling)
+  server.ts    entry point
+```
+
+Layering convention: `routes -> controller -> service -> repository -> database`. Each layer
+only calls the one directly below it. Dependency injection via `tsyringe`, wired in
+`src/shared/config/container.ts`, register any new service/repository there.

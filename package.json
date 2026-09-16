@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "description": "Interview Platform: auth flow (login, invite-accept) and orgs. Jobs, candidates, and interview sessions come back once their schema is settled.",
   "scripts": {
-    "dev": "infisical run --env dev -- cross-env NODE_ENV=development nodemon",
+    "dev": "cross-env NODE_ENV=development nodemon",
     "build": "tsc && tsc-alias",
     "start": "cross-env NODE_ENV=production node dist/server.js",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "infisical run --env dev -- prisma migrate dev",
-    "seed:admin": "infisical run --env dev -- cross-env NODE_ENV=development tsx src/scripts/seed-super-admin.ts",
+    "prisma:migrate": "prisma migrate dev",
+    "seed:admin": "cross-env NODE_ENV=development tsx src/scripts/seed-super-admin.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

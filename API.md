@@ -1,7 +1,6 @@
-# core-api: contracts
+# core-api: API and database reference
 
-What exists right now: auth and invitations. Nothing else. Update this file in the same PR
-whenever an endpoint or a table changes, it should never drift from the code.
+Every endpoint this service exposes, and the tables behind them.
 
 ## Auth mechanism
 
@@ -117,6 +116,5 @@ Company (1) ----< (many) Invitation
 - **User**: `id, company_id (FK), full_name, email (unique), password_hash, role, invited_by, is_active, created_at`. A login account, always belongs to exactly one company.
 - **Invitation**: `id, company_id (FK, nullable), email, role, token (unique), invited_by, expires_at, accepted_at, created_at, pending_company_name, pending_company_slug`. `company_id` is null until accepted for a brand-new-company invite (super_admin inviting someone to found a new company); otherwise it's set from the start.
 
-Nothing else exists yet. Jobs, candidates, and interview sessions were built once, removed
-deliberately (see git history / core-api's README), and come back one at a time once each is
-actually needed, with its own contract added here in the same PR.
+Jobs, candidates, and interview sessions are not implemented in this service. Only the tables
+and endpoints listed above exist.
