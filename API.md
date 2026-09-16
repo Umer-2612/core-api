@@ -8,8 +8,9 @@ JWT in an httpOnly `Authorization` cookie, set by the server on login/set-passwo
 returned in the response body as `token`, for clients that can't rely on the cookie (the
 `Bearer <token>` header works too). Payload: `{ id, companyId, role }`.
 
-Roles: `super_admin` (one, seeded via `npm run seed:admin`, not created through any API) and
-`hiring_manager` (created only by accepting an invitation). No public signup endpoint exists.
+Roles: `super_admin` (one; created via `npm run seed:admin`, or `POST /auth/bootstrap-admin`,
+see below) and `hiring_manager` (created only by accepting an invitation). No public signup
+endpoint exists for either role.
 
 ## Endpoints
 
@@ -33,6 +34,18 @@ atomically, via `CompaniesRepository.createWithUser`.
 { "token": "string", "full_name": "string", "password": "string (8+ chars, letter+number)" }
 // response 201
 { "data": { "user": PublicUser, "token": "string" }, "message": "password set" }
+```
+
+### `POST /auth/bootstrap-admin`
+Public. Development only, 403 in production. Only works once, refuses to run if a
+`super_admin` already exists (409). Creates the platform's one super admin from the
+`SUPER_ADMIN_*` environment variables, no request body. A convenience alternative to
+`npm run seed:admin` for local setup, not something to leave reachable anywhere outside
+development, it's an unauthenticated account-creation endpoint by necessity, there's no
+existing admin yet to gate it against.
+```json
+// response 201
+{ "data": { "user": PublicUser, "token": "string" }, "message": "super admin created" }
 ```
 
 ### `GET /auth/me`

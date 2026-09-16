@@ -28,6 +28,13 @@ export class AuthController {
     res.status(201).json({ data: { user, token }, message: "password set" });
   });
 
+  /** DEV-ONLY. See AuthService.bootstrapAdmin's comment before touching this. */
+  public bootstrapAdmin: RequestHandler = asyncHandler(async (_req: Request, res: Response) => {
+    const { cookie, token, user } = await this.authService.bootstrapAdmin();
+    res.setHeader("Set-Cookie", [cookie]);
+    res.status(201).json({ data: { user, token }, message: "super admin created" });
+  });
+
   public me: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { user } = req as RequestWithUser;
     const fresh = await this.authService.me(user.id);

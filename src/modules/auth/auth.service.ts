@@ -8,7 +8,16 @@ import type { IInvitationsRepository } from "@modules/invitations/invitations.re
 import { InvitationsRepository } from "@modules/invitations/invitations.repository";
 import type { IUsersRepository } from "@modules/users/users.repository";
 import { UsersRepository } from "@modules/users/users.repository";
-import { JWT_EXPIRES_IN_SECONDS, NODE_ENV, SECRET_KEY } from "@shared/config/env";
+import {
+  JWT_EXPIRES_IN_SECONDS,
+  NODE_ENV,
+  SECRET_KEY,
+  SUPER_ADMIN_COMPANY_NAME,
+  SUPER_ADMIN_COMPANY_SLUG,
+  SUPER_ADMIN_EMAIL,
+  SUPER_ADMIN_NAME,
+  SUPER_ADMIN_PASSWORD,
+} from "@shared/config/env";
 import { HttpException } from "@shared/exceptions/http.exception";
 import { type PublicUser, toPublicUser, type UserRecord } from "@shared/interfaces/models.interface";
 import { Hash } from "@shared/utils/hash";
@@ -116,7 +125,7 @@ export class AuthService {
         throw err;
       }
       // Not part of the company+user transaction above (that's owned by
-      // CompaniesRepository, not InvitationsRepository) — a small window where
+      // CompaniesRepository, not InvitationsRepository), a small window where
       // the user exists but the invite isn't marked accepted yet. Acceptable:
       // worst case is the invite link still resolves once more, harmlessly.
       await this.invitationsRepository.markAccepted(invitation.id, new Date());
@@ -133,6 +142,49 @@ export class AuthService {
       });
       await this.invitationsRepository.markAccepted(invitation.id, new Date());
     }
+
+    const tokenData = this.createToken(user);
+    return { cookie: this.createCookie(tokenData), token: tokenData.token, user: toPublicUser(user) };
+  }
+
+  /**
+   * DEV-ONLY, self-service alternative to `npm run seed:admin`. Creates the
+   * platform's one super_admin from the SUPER_ADMIN_* env vars, over HTTP
+   * instead of a CLI script. Disabled outside development and refuses to run
+   * if a super_admin already exists, an unauthenticated account-creation
+   * endpoint is real attack surface; remove this method and its route once
+   * it's no longer needed for convenience during early setup.
+   */
+  public async bootstrapAdmin(): Promise<{ cookie: string; token: string; user: PublicUser }> {
+    if (NODE_ENV === "production") {
+      throw new HttpException(403, "Not available in production");
+    }
+    if (await this.usersRepository.existsByRole("super_admin")) {
+      throw new HttpException(409, "A super admin already exists");
+    }
+    if (
+      !SUPER_ADMIN_EMAIL ||
+      !SUPER_ADMIN_PASSWORD ||
+      !SUPER_ADMIN_NAME ||
+      !SUPER_ADMIN_COMPANY_NAME ||
+      !SUPER_ADMIN_COMPANY_SLUG
+    ) {
+      throw new HttpException(
+        500,
+        "SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD, SUPER_ADMIN_NAME, SUPER_ADMIN_COMPANY_NAME, and SUPER_ADMIN_COMPANY_SLUG must be set",
+      );
+    }
+
+    const passwordHash = await Hash.hashPassword(SUPER_ADMIN_PASSWORD);
+    const { user } = await this.companiesRepository.createWithUser({
+      companyName: SUPER_ADMIN_COMPANY_NAME,
+      companySlug: SUPER_ADMIN_COMPANY_SLUG,
+      fullName: SUPER_ADMIN_NAME,
+      email: SUPER_ADMIN_EMAIL,
+      passwordHash,
+      role: "super_admin",
+      invitedBy: null,
+    });
 
     const tokenData = this.createToken(user);
     return { cookie: this.createCookie(tokenData), token: tokenData.token, user: toPublicUser(user) };

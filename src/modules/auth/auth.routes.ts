@@ -22,5 +22,7 @@ export class AuthRoute implements Routes {
     this.router.post("/set-password", ValidationMiddleware(setPasswordSchema), this.authController.setPassword);
     this.router.get("/me", AuthMiddleware, this.authController.me);
     this.router.post("/logout", this.authController.logOut);
+    // DEV-ONLY. See AuthService.bootstrapAdmin's comment before touching this.
+    this.router.post("/bootstrap-admin", this.authController.bootstrapAdmin);
   }
 }

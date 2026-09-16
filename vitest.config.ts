@@ -13,6 +13,11 @@ export default defineConfig({
     env: {
       SECRET_KEY: "test-secret-key-not-for-real-use",
       DATABASE_URL: "postgresql://test:test@localhost:5432/test",
+      SUPER_ADMIN_EMAIL: "admin@test.local",
+      SUPER_ADMIN_PASSWORD: "test-password-123",
+      SUPER_ADMIN_NAME: "Test Admin",
+      SUPER_ADMIN_COMPANY_NAME: "Test Co",
+      SUPER_ADMIN_COMPANY_SLUG: "test-co",
     },
   },
 });

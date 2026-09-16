@@ -21,6 +21,7 @@ export interface IUsersRepository {
   findByEmail(email: string): Promise<UserRecord | null>;
   findByCompany(companyId: string): Promise<UserRecord[]>;
   existsByEmail(email: string): Promise<boolean>;
+  existsByRole(role: UserRole): Promise<boolean>;
   create(data: CreateUserData): Promise<UserRecord>;
   update(id: string, data: UpdateUserData): Promise<UserRecord>;
   delete(id: string): Promise<void>;
@@ -42,6 +43,11 @@ export class UsersRepository implements IUsersRepository {
 
   async existsByEmail(email: string): Promise<boolean> {
     const count = await prisma.user.count({ where: { email: email.toLowerCase().trim() } });
+    return count > 0;
+  }
+
+  async existsByRole(role: UserRole): Promise<boolean> {
+    const count = await prisma.user.count({ where: { role } });
     return count > 0;
   }
 
