@@ -4,7 +4,8 @@ Auth flow: login, invite-accept, orgs. Jobs, candidates, and interview sessions 
 now, they're coming back once their schema is actually settled, not carried over wholesale from
 the reference repo again.
 
-Full plan: see the `platform` repo's README (sibling folder).
+Full plan: see the `platform` repo's README (sibling folder). API endpoints and the database
+schema: see `API.md`.
 
 ## Status
 
@@ -18,8 +19,8 @@ was the wrong order.
 
 ## Quick start
 
-Secrets live in Infisical, not in a `.env` file. `.env.example` documents what variables exist,
-it's not something to copy.
+Secrets live in Infisical, not in a `.env` file. See the project's dev environment in the
+Infisical dashboard for the current variable list, values are never written to disk locally.
 
 ```bash
 # one-time per machine
