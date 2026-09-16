@@ -18,22 +18,24 @@ Full endpoint list and database schema: see `API.md`.
 
 - `git`
 - `docker` and `docker compose`
-- the [Infisical CLI](https://infisical.com/docs/cli/overview): `brew install infisical/get-cli/infisical`
+- [`age`](https://github.com/FiloSottile/age) and [`direnv`](https://direnv.net):
+  `brew install age direnv`
 
-Node.js is not required on your machine. This service runs inside a container; secrets are
-never stored in a file, they're fetched from Infisical at startup.
+Node.js is not required on your machine. Secrets are never stored in this repo: this repo's
+`.envrc` loads them automatically from a shared local cache populated by the `secrets-vault`
+repo, see that repo's README for how the cache gets there.
 
 ## Running this service
 
 This service is normally started as part of the whole project, see the `platform` repo's
 README for the one-command setup that runs every service together.
 
-To run just this service on its own:
+To run just this service on its own (assumes you've already run `secrets-vault`'s `setup.sh`
+at least once):
 
 ```bash
-infisical login          # once per machine
-infisical init            # once per clone; links this folder to the Infisical project
-infisical run --env dev -- docker compose up --build
+direnv allow            # once per clone, trusts this repo's .envrc
+docker compose up --build
 ```
 
 The API is available at `http://localhost:4000`, all routes under `/api/v1`.
@@ -42,8 +44,8 @@ To run it without Docker (requires Node.js 20+ installed locally):
 
 ```bash
 npm install
-infisical run --env dev -- npm run prisma:migrate
-infisical run --env dev -- npm run dev
+npm run prisma:migrate
+npm run dev
 ```
 
 ## Creating the first account
@@ -51,7 +53,7 @@ infisical run --env dev -- npm run dev
 There is no signup form. The first account (the super admin) is created by running:
 
 ```bash
-infisical run --env dev -- npm run seed:admin
+npm run seed:admin
 ```
 
 Every other account is created by an existing admin sending an invitation; the invited person
