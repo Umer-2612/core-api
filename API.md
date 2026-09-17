@@ -9,9 +9,9 @@ response body as `token`, for clients that can't rely on the cookie (the `Bearer
 header works too). Payload: `{ id, companyId, role }`.
 
 Roles: `super_admin` (one; created via `npm run seed:admin`, or `POST /auth/bootstrap-admin`,
-see below) and `hiring_manager` (created directly by a super admin or by another hiring
-manager, with a real password from the start, no invite-token or accept step). No public
-signup endpoint exists for either role.
+see below) and `hiring_manager` (created only by a super admin, with a real password from the
+start, no invite-token or accept step). A hiring manager cannot create other hiring managers.
+No public signup endpoint exists for either role.
 
 ## Endpoints
 
@@ -61,14 +61,12 @@ company's users; super_admin sees every company's.
 ```
 
 ### `POST /users`
-Auth required, role: `super_admin` or `hiring_manager`. Always creates a `hiring_manager`,
-with the password given directly in the request, no invite link involved.
-- super_admin: `company_name` is required, creates a brand-new company and the hiring manager
-  together, atomically.
-- hiring_manager: creates a peer in their own company, `company_name` is ignored.
+Auth required, role: `super_admin` only. Founds a brand-new company and its first hiring
+manager together, atomically, with the password given directly in the request, no invite
+link involved.
 ```json
 // request
-{ "company_name": "string (required only for super_admin)", "full_name": "string", "email": "string", "password": "string (8+ chars, letter+number)" }
+{ "company_name": "string", "full_name": "string", "email": "string", "password": "string (8+ chars, letter+number)" }
 // response 201
 { "data": PublicUser, "message": "user created" }
 ```
