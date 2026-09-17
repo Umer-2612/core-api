@@ -17,7 +17,6 @@ export default defineConfig({
       SUPER_ADMIN_PASSWORD: "test-password-123",
       SUPER_ADMIN_NAME: "Test Admin",
       SUPER_ADMIN_COMPANY_NAME: "Test Co",
-      SUPER_ADMIN_COMPANY_SLUG: "test-co",
     },
   },
 });

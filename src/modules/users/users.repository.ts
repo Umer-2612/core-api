@@ -1,4 +1,4 @@
-import type { UserRecord, UserRole } from "@shared/interfaces/models.interface";
+import type { UserRecord, UserRole, UserStatus } from "@shared/interfaces/models.interface";
 import { prisma } from "@/db/prisma";
 
 export interface CreateUserData {
@@ -13,13 +13,14 @@ export interface CreateUserData {
 export interface UpdateUserData {
   full_name?: string;
   role?: UserRole;
-  is_active?: boolean;
+  status?: UserStatus;
 }
 
 export interface IUsersRepository {
   findById(id: string): Promise<UserRecord | null>;
   findByEmail(email: string): Promise<UserRecord | null>;
   findByCompany(companyId: string): Promise<UserRecord[]>;
+  findAll(): Promise<UserRecord[]>;
   existsByEmail(email: string): Promise<boolean>;
   existsByRole(role: UserRole): Promise<boolean>;
   create(data: CreateUserData): Promise<UserRecord>;
@@ -39,6 +40,10 @@ export class UsersRepository implements IUsersRepository {
 
   async findByCompany(companyId: string): Promise<UserRecord[]> {
     return prisma.user.findMany({ where: { company_id: companyId }, orderBy: { created_at: "desc" } });
+  }
+
+  async findAll(): Promise<UserRecord[]> {
+    return prisma.user.findMany({ orderBy: { created_at: "desc" } });
   }
 
   async existsByEmail(email: string): Promise<boolean> {

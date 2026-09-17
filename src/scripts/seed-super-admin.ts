@@ -2,7 +2,6 @@ import "reflect-metadata";
 import "@shared/config/env";
 import {
   SUPER_ADMIN_COMPANY_NAME,
-  SUPER_ADMIN_COMPANY_SLUG,
   SUPER_ADMIN_EMAIL,
   SUPER_ADMIN_NAME,
   SUPER_ADMIN_PASSWORD,
@@ -12,8 +11,8 @@ import { logger } from "@shared/utils/logger";
 import { connectDatabase, disconnectDatabase, prisma } from "@/db/prisma";
 
 async function main() {
-  if (!SUPER_ADMIN_EMAIL || !SUPER_ADMIN_PASSWORD || !SUPER_ADMIN_NAME || !SUPER_ADMIN_COMPANY_NAME || !SUPER_ADMIN_COMPANY_SLUG) {
-    logger.error("Set SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD, SUPER_ADMIN_NAME, SUPER_ADMIN_COMPANY_NAME, SUPER_ADMIN_COMPANY_SLUG to seed.");
+  if (!SUPER_ADMIN_EMAIL || !SUPER_ADMIN_PASSWORD || !SUPER_ADMIN_NAME || !SUPER_ADMIN_COMPANY_NAME) {
+    logger.error("Set SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD, SUPER_ADMIN_NAME, SUPER_ADMIN_COMPANY_NAME to seed.");
     process.exit(1);
   }
 
@@ -30,9 +29,9 @@ async function main() {
 
   await prisma.$transaction(async (tx) => {
     const company = await tx.company.upsert({
-      where: { slug: SUPER_ADMIN_COMPANY_SLUG! },
+      where: { name: SUPER_ADMIN_COMPANY_NAME! },
       update: {},
-      create: { name: SUPER_ADMIN_COMPANY_NAME!, slug: SUPER_ADMIN_COMPANY_SLUG! },
+      create: { name: SUPER_ADMIN_COMPANY_NAME! },
     });
 
     await tx.user.create({

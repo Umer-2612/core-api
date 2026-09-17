@@ -12,50 +12,37 @@ enum UserRole {
   hiring_manager
 }
 
+enum UserStatus {
+  pending_verification
+  active
+  inactive
+}
+
 model Company {
   id         String   @id @default(uuid())
-  name       String
-  slug       String   @unique
+  name       String   @unique
   created_at DateTime @default(now())
 
-  users       User[]
-  invitations Invitation[]
+  users User[]
 
   @@map("companies")
 }
 
 model User {
-  id            String   @id @default(uuid())
+  id            String     @id @default(uuid())
   company_id    String
   full_name     String
-  email         String   @unique
+  email         String     @unique
   password_hash String
   role          UserRole
+  status        UserStatus @default(active)
   invited_by    String?
-  is_active     Boolean  @default(true)
-  created_at    DateTime @default(now())
+  created_at    DateTime   @default(now())
 
-  company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  company  Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  inviter  User?   @relation("UserInvitedBy", fields: [invited_by], references: [id], onDelete: SetNull)
+  invitees User[]  @relation("UserInvitedBy")
 
   @@index([company_id])
   @@map("users")
-}
-
-model Invitation {
-  id                   String    @id @default(uuid())
-  company_id           String?
-  email                String
-  role                 UserRole
-  token                String    @unique
-  invited_by           String?
-  expires_at           DateTime
-  accepted_at          DateTime?
-  created_at           DateTime  @default(now())
-  pending_company_name String?
-  pending_company_slug String?
-
-  company Company? @relation(fields: [company_id], references: [id], onDelete: Cascade)
-
-  @@index([company_id, email])
-  @@map("invitations")
 }

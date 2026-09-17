@@ -3,9 +3,9 @@
  * shapes (unlike Mongoose, there's no lean()/ObjectId mapping needed), so we
  * re-export its types directly instead of hand-rolling duplicates.
  */
-import type { Company, Invitation, User, UserRole } from "@prisma/client";
+import type { Company, User, UserRole, UserStatus } from "@prisma/client";
 
-export type { Company, Invitation, User, UserRole };
+export type { Company, User, UserRole, UserStatus };
 
 /** Full user row, including the password hash. Never send this to a client. */
 export type UserRecord = User;
@@ -17,7 +17,7 @@ export interface PublicUser {
   full_name: string;
   email: string;
   role: UserRole;
-  is_active: boolean;
+  status: UserStatus;
   created_at: Date;
 }
 
@@ -28,6 +28,6 @@ export const toPublicUser = (user: UserRecord): PublicUser => ({
   full_name: user.full_name,
   email: user.email,
   role: user.role,
-  is_active: user.is_active,
+  status: user.status,
   created_at: user.created_at,
 });

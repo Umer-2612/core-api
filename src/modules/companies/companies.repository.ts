@@ -3,12 +3,10 @@ import { prisma } from "@/db/prisma";
 
 export interface CreateCompanyData {
   name: string;
-  slug: string;
 }
 
 export interface CreateCompanyWithUserData {
   companyName: string;
-  companySlug: string;
   fullName: string;
   email: string;
   passwordHash: string;
@@ -18,9 +16,9 @@ export interface CreateCompanyWithUserData {
 
 export interface ICompaniesRepository {
   findById(id: string): Promise<Company | null>;
-  findBySlug(slug: string): Promise<Company | null>;
+  findByName(name: string): Promise<Company | null>;
   create(data: CreateCompanyData): Promise<Company>;
-  /** Atomically creates a company and its first user (invite-accept for a brand-new company). */
+  /** Atomically creates a company and its first user (super admin creating a hiring manager). */
   createWithUser(data: CreateCompanyWithUserData): Promise<{ company: Company; user: UserRecord }>;
 }
 
@@ -30,17 +28,17 @@ export class CompaniesRepository implements ICompaniesRepository {
     return prisma.company.findUnique({ where: { id } });
   }
 
-  async findBySlug(slug: string): Promise<Company | null> {
-    return prisma.company.findUnique({ where: { slug } });
+  async findByName(name: string): Promise<Company | null> {
+    return prisma.company.findUnique({ where: { name } });
   }
 
   async create(data: CreateCompanyData): Promise<Company> {
-    return prisma.company.create({ data: { name: data.name, slug: data.slug } });
+    return prisma.company.create({ data: { name: data.name } });
   }
 
   async createWithUser(data: CreateCompanyWithUserData): Promise<{ company: Company; user: UserRecord }> {
     return prisma.$transaction(async (tx) => {
-      const company = await tx.company.create({ data: { name: data.companyName, slug: data.companySlug } });
+      const company = await tx.company.create({ data: { name: data.companyName } });
       const user = await tx.user.create({
         data: {
           company_id: company.id,
