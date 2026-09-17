@@ -24,6 +24,7 @@ model Company {
   created_at DateTime @default(now())
 
   users User[]
+  jobs  Job[]
 
   @@map("companies")
 }
@@ -39,10 +40,44 @@ model User {
   invited_by    String?
   created_at    DateTime   @default(now())
 
-  company  Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  inviter  User?   @relation("UserInvitedBy", fields: [invited_by], references: [id], onDelete: SetNull)
-  invitees User[]  @relation("UserInvitedBy")
+  company            Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  inviter            User?       @relation("UserInvitedBy", fields: [invited_by], references: [id], onDelete: SetNull)
+  invitees           User[]      @relation("UserInvitedBy")
+  created_jobs       Job[]       @relation("JobCreatedBy")
+  created_candidates Candidate[] @relation("CandidateCreatedBy")
 
   @@index([company_id])
   @@map("users")
+}
+
+model Job {
+  id          String   @id @default(uuid())
+  company_id  String
+  title       String
+  description String
+  created_by  String
+  created_at  DateTime @default(now())
+
+  company    Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  creator    User        @relation("JobCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
+  candidates Candidate[]
+
+  @@index([company_id])
+  @@map("jobs")
+}
+
+model Candidate {
+  id               String   @id @default(uuid())
+  job_id           String
+  full_name        String
+  resume_file_name String
+  resume_key       String
+  created_by       String
+  created_at       DateTime @default(now())
+
+  job     Job  @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  creator User @relation("CandidateCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
+
+  @@index([job_id])
+  @@map("candidates")
 }

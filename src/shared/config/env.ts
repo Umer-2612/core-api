@@ -36,6 +36,11 @@ const EnvSchema = z
     SUPER_ADMIN_PASSWORD: z.string().min(8).optional(),
     SUPER_ADMIN_NAME: z.string().min(1).optional(),
     SUPER_ADMIN_COMPANY_NAME: z.string().min(1).optional(),
+
+    AWS_REGION: z.string().min(1).optional(),
+    AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
+    AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    S3_BUCKET_NAME: z.string().min(1).optional(),
   })
   .strip();
 
@@ -63,6 +68,11 @@ export const SUPER_ADMIN_EMAIL = env.SUPER_ADMIN_EMAIL;
 export const SUPER_ADMIN_PASSWORD = env.SUPER_ADMIN_PASSWORD;
 export const SUPER_ADMIN_NAME = env.SUPER_ADMIN_NAME;
 export const SUPER_ADMIN_COMPANY_NAME = env.SUPER_ADMIN_COMPANY_NAME;
+
+export const AWS_REGION = env.AWS_REGION;
+export const AWS_ACCESS_KEY_ID = env.AWS_ACCESS_KEY_ID;
+export const AWS_SECRET_ACCESS_KEY = env.AWS_SECRET_ACCESS_KEY;
+export const S3_BUCKET_NAME = env.S3_BUCKET_NAME;
 
 export const CORS_ORIGIN_LIST =
   env.CORS_ORIGINS?.split(",")
