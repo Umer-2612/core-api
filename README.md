@@ -8,11 +8,14 @@ Backend service for the Interview Platform. Handles authentication and organizat
 - Organizations ("companies"): every user belongs to exactly one company.
 - Account creation: a super admin creates a hiring manager and their company together in one
   call. There is no public signup form and no invite-link/accept-password step.
+- Jobs: a hiring manager creates a job (title and description) in their own company.
+- Candidates: a hiring manager bulk-uploads PDF resumes to a job, each PDF becomes one
+  candidate. The resume itself is stored in S3, only its key lives in Postgres.
 
 Two roles exist: `super_admin` (the platform owner, one account, created by a seed script or
 `POST /auth/bootstrap-admin` in development) and `hiring_manager` (created only by a super
 admin, with a real password from the start). A hiring manager cannot create other hiring
-managers.
+managers, and a super admin cannot create jobs or upload candidates, only view them.
 
 Full endpoint list and database schema: see `API.md`.
 
@@ -75,7 +78,15 @@ invite link or separate accept-password step.
 ## Database
 
 One Postgres database, hosted on Supabase, shared across every repo in this project. This
-service owns two tables: `companies`, `users`. Full schema and relationships: see `API.md`.
+service owns four tables: `companies`, `users`, `jobs`, `candidates`. Full schema and
+relationships: see `API.md`.
+
+## Resume storage (S3)
+
+Uploaded PDFs are stored in S3, not Postgres. Needs `AWS_REGION`, `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, and `S3_BUCKET_NAME` in the vault (see `secrets-vault`'s
+`vault.env.template`). The IAM user only needs `s3:PutObject` and `s3:GetObject` scoped to
+that one bucket, nothing else, resumes are always read and written by exact key, never listed.
 
 ## Tests
 
@@ -88,7 +99,7 @@ Runs without a database connection; the test suite uses in-memory fakes for data
 
 ```
 src/
-  modules/     one folder per domain area: auth, users, companies
+  modules/     one folder per domain area: auth, users, companies, jobs, candidates
   shared/      config, middleware, shared types, utilities
   db/          Postgres connection setup (Prisma)
   app.ts       Express app (middleware, routes, error handling)

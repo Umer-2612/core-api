@@ -71,6 +71,55 @@ link involved.
 { "data": PublicUser, "message": "user created" }
 ```
 
+### `GET /jobs`
+Auth required, role: `super_admin` or `hiring_manager`. A hiring manager sees only their own
+company's jobs; super_admin sees every company's, read-only, super admins cannot create jobs.
+```json
+// response 200
+{ "data": Job[], "message": "jobs" }
+```
+
+### `POST /jobs`
+Auth required, role: `hiring_manager` only. Always scoped to the caller's own company.
+```json
+// request
+{ "title": "string", "description": "string" }
+// response 201
+{ "data": Job, "message": "job created" }
+```
+
+### `GET /jobs/:id`
+Auth required, role: `super_admin` or `hiring_manager`. 404 if the job doesn't exist, 403 if
+a hiring manager tries to view another company's job.
+```json
+// response 200
+{ "data": Job, "message": "job" }
+```
+
+### `GET /jobs/:id/candidates`
+Auth required, role: `super_admin` or `hiring_manager`, same visibility rule as `GET /jobs/:id`.
+Never includes the resume file itself, only metadata.
+```json
+// response 200
+{ "data": PublicCandidate[], "message": "candidates" }
+```
+
+### `POST /jobs/:id/candidates`
+Auth required, role: `hiring_manager` only, and the job must belong to their own company.
+Multipart form, field name `resumes`, one or more PDF files (5MB each, 20 files per request).
+No name or email field, there's no form for it, each candidate's `full_name` is derived from
+its file name (`jane-doe_resume.pdf` becomes `Jane Doe Resume`). The files themselves are
+stored in S3, this table only ever holds metadata.
+```json
+// response 201
+{ "data": PublicCandidate[], "message": "resumes uploaded" }
+```
+
+### `GET /jobs/:id/candidates/:candidateId/resume`
+Auth required, role: `super_admin` or `hiring_manager`, same visibility rule as `GET /jobs/:id`.
+Streams the PDF back (`Content-Type: application/pdf`, `Content-Disposition: attachment`),
+fetched from S3 on the fly, not cached in the response body of any other endpoint.
+
 ## Shapes
 
 **PublicUser** (never includes `password_hash`):
@@ -83,18 +132,29 @@ link involved.
 { "success": false, "error": { "code": 400, "message": "string", "timestamp": "date", "path": "string", "details": "optional" } }
 ```
 
+**PublicCandidate** (never includes the resume file, only where it points):
+```json
+{ "id": "uuid", "job_id": "uuid", "full_name": "string", "resume_file_name": "string", "created_at": "date" }
+```
+
 ## Database
 
-One Postgres database (Supabase), this repo owns two tables. See `prisma/schema.prisma` for
+One Postgres database (Supabase), this repo owns four tables. See `prisma/schema.prisma` for
 the exact source of truth, this is the relationship summary.
 
 ```
 Company (1) ----< (many) User
-User    (1) ----< (many) User   (invited_by, self-referencing)
+User    (1) ----< (many) User        (invited_by, self-referencing)
+Company (1) ----< (many) Job
+User    (1) ----< (many) Job         (created_by)
+Job     (1) ----< (many) Candidate
+User    (1) ----< (many) Candidate   (created_by)
 ```
 
 - **Company**: `id, name (unique), created_at`. A tenant.
 - **User**: `id, company_id (FK), full_name, email (unique), password_hash, role, status, invited_by (FK to another user, nullable), created_at`. A login account, always belongs to exactly one company. `status` is `active` unless there's a reason for it not to be, `pending_verification` is reserved for a future verification step and unused today.
+- **Job**: `id, company_id (FK), title, description, created_by (FK), created_at`. Only a hiring manager creates these.
+- **Candidate**: `id, job_id (FK), full_name, resume_file_name, resume_key, created_by (FK), created_at`. One row per uploaded resume. `resume_key` is the S3 object key, the file itself never touches Postgres.
 
-Jobs, candidates, and interview sessions are not implemented in this service. Only the tables
-and endpoints listed above exist.
+Interview sessions are not implemented in this service. Only the tables and endpoints listed
+above exist.
