@@ -23,7 +23,7 @@ export class UsersRoute implements Routes {
     this.router.post(
       "/",
       AuthMiddleware,
-      requireRole("super_admin", "hiring_manager"),
+      requireRole("super_admin"),
       ValidationMiddleware(createUserSchema),
       this.usersController.create,
     );

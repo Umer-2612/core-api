@@ -101,6 +101,7 @@ class FakeCompaniesRepository implements ICompaniesRepository {
 
 function makeDto(overrides: Partial<CreateUserDto> = {}): CreateUserDto {
   return {
+    company_name: "Acme Corp",
     full_name: "New Hire",
     email: "new-hire@acme.com",
     password: "abc12345",
@@ -120,7 +121,7 @@ describe("UsersService", () => {
   });
 
   describe("createUser", () => {
-    it("super admin: creates a brand-new company and hiring manager together", async () => {
+    it("creates a brand-new company and its hiring manager together", async () => {
       const superAdmin = toPublic(makeUser({ id: "admin-1", role: "super_admin" }));
 
       const result = await service.createUser(makeDto({ company_name: "Acme Corp" }), superAdmin);
@@ -131,29 +132,25 @@ describe("UsersService", () => {
       expect(companies.createWithUserCalls[0].invitedBy).toBe("admin-1");
     });
 
-    it("super admin: rejects when company_name is missing", async () => {
-      const superAdmin = toPublic(makeUser({ id: "admin-1", role: "super_admin" }));
-
-      await expect(service.createUser(makeDto(), superAdmin)).rejects.toMatchObject({ status: 400 });
-      expect(companies.createWithUserCalls).toHaveLength(0);
-    });
-
-    it("hiring manager: creates a peer in their own company, ignoring company_name", async () => {
-      const hiringManager = toPublic(makeUser({ id: "hm-1", company_id: "company-1" }));
-
-      const result = await service.createUser(makeDto({ company_name: "Should Be Ignored" }), hiringManager);
-
-      expect(result.company_id).toBe("company-1");
-      expect(users.users).toHaveLength(1);
-      expect(users.users[0].invited_by).toBe("hm-1");
-      expect(companies.createWithUserCalls).toHaveLength(0);
-    });
-
     it("rejects when a user with that email already exists", async () => {
-      const hiringManager = toPublic(makeUser({ id: "hm-1", company_id: "company-1" }));
+      const superAdmin = toPublic(makeUser({ id: "admin-1", role: "super_admin" }));
       users.users.push(makeUser({ email: "new-hire@acme.com" }));
 
-      await expect(service.createUser(makeDto(), hiringManager)).rejects.toMatchObject({ status: 409 });
+      await expect(service.createUser(makeDto(), superAdmin)).rejects.toMatchObject({ status: 409 });
+    });
+
+    it("rejects when the company name is already taken", async () => {
+      const superAdmin = toPublic(makeUser({ id: "admin-1", role: "super_admin" }));
+      companies.companies.push({ id: "company-1", name: "Acme Corp", created_at: new Date() });
+      companies.createWithUser = async () => {
+        const err = new Error("Unique constraint failed") as Error & { code: string };
+        err.code = "P2002";
+        throw err;
+      };
+
+      await expect(service.createUser(makeDto({ company_name: "Acme Corp" }), superAdmin)).rejects.toMatchObject({
+        status: 409,
+      });
     });
   });
 

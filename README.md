@@ -7,12 +7,12 @@ Backend service for the Interview Platform. Handles authentication and organizat
 - Authentication: login, direct account creation (no invite tokens), session lookup, logout.
 - Organizations ("companies"): every user belongs to exactly one company.
 - Account creation: a super admin creates a hiring manager and their company together in one
-  call; a hiring manager creates a peer in their own company the same way. There is no public
-  signup form and no invite-link/accept-password step.
+  call. There is no public signup form and no invite-link/accept-password step.
 
 Two roles exist: `super_admin` (the platform owner, one account, created by a seed script or
-`POST /auth/bootstrap-admin` in development) and `hiring_manager` (created directly by a super
-admin or another hiring manager, with a real password from the start).
+`POST /auth/bootstrap-admin` in development) and `hiring_manager` (created only by a super
+admin, with a real password from the start). A hiring manager cannot create other hiring
+managers.
 
 Full endpoint list and database schema: see `API.md`.
 
@@ -69,8 +69,8 @@ npm run seed:admin
 
 or, in development, by calling `POST /auth/bootstrap-admin` (see `API.md`).
 
-Every other account is created directly by an existing admin, through `POST /users`, no invite
-link or separate accept-password step.
+Every hiring manager account is created directly by the super admin, through `POST /users`, no
+invite link or separate accept-password step.
 
 ## Database
 
