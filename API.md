@@ -4,13 +4,14 @@ Every endpoint this service exposes, and the tables behind them.
 
 ## Auth mechanism
 
-JWT in an httpOnly `Authorization` cookie, set by the server on login/set-password. Also
-returned in the response body as `token`, for clients that can't rely on the cookie (the
-`Bearer <token>` header works too). Payload: `{ id, companyId, role }`.
+JWT in an httpOnly `Authorization` cookie, set by the server on login. Also returned in the
+response body as `token`, for clients that can't rely on the cookie (the `Bearer <token>`
+header works too). Payload: `{ id, companyId, role }`.
 
 Roles: `super_admin` (one; created via `npm run seed:admin`, or `POST /auth/bootstrap-admin`,
-see below) and `hiring_manager` (created only by accepting an invitation). No public signup
-endpoint exists for either role.
+see below) and `hiring_manager` (created directly by a super admin or by another hiring
+manager, with a real password from the start, no invite-token or accept step). No public
+signup endpoint exists for either role.
 
 ## Endpoints
 
@@ -23,17 +24,6 @@ Public.
 { "email": "string", "password": "string" }
 // response 200
 { "data": { "user": PublicUser, "token": "string" }, "message": "login" }
-```
-
-### `POST /auth/set-password`
-Public (token-gated). Accepts an invitation: creates the user, and if the invite has no
-`company_id` yet (a super_admin invited a brand-new hiring manager), creates the company too,
-atomically, via `CompaniesRepository.createWithUser`.
-```json
-// request
-{ "token": "string", "full_name": "string", "password": "string (8+ chars, letter+number)" }
-// response 201
-{ "data": { "user": PublicUser, "token": "string" }, "message": "password set" }
 ```
 
 ### `POST /auth/bootstrap-admin`
@@ -62,52 +52,32 @@ Auth required. Clears the cookie. Stateless JWT, no server-side revocation.
 { "message": "logout" }
 ```
 
-### `GET /invitations`
-Auth required, role: `super_admin` or `hiring_manager`. A hiring manager sees only their
-company's invitations; super_admin sees all.
+### `GET /users`
+Auth required, role: `super_admin` or `hiring_manager`. A hiring manager sees only their own
+company's users; super_admin sees every company's.
 ```json
 // response 200
-{ "data": Invitation[], "message": "invitations" }
+{ "data": PublicUser[], "message": "users" }
 ```
 
-### `POST /invitations`
-Auth required, role: `super_admin` or `hiring_manager`.
-- super_admin: `pending_company_name` is required, creates a pending invite for a brand-new
-  company (no `company_id` yet, filled in when the invite is accepted).
-- hiring_manager: invites into their own company, `pending_company_name` is ignored.
+### `POST /users`
+Auth required, role: `super_admin` or `hiring_manager`. Always creates a `hiring_manager`,
+with the password given directly in the request, no invite link involved.
+- super_admin: `company_name` is required, creates a brand-new company and the hiring manager
+  together, atomically.
+- hiring_manager: creates a peer in their own company, `company_name` is ignored.
 ```json
 // request
-{ "email": "string", "pending_company_name": "string (required only for super_admin)" }
+{ "company_name": "string (required only for super_admin)", "full_name": "string", "email": "string", "password": "string (8+ chars, letter+number)" }
 // response 201
-{ "data": { "email": "string", "role": "hiring_manager", "expires_at": "date" }, "message": "invitation sent" }
-```
-
-### `POST /invitations/:id/resend`
-Auth required, role: `super_admin` only. New token, new expiry, re-sends the email.
-```json
-// response 200
-{ "data": null, "message": "invitation resent" }
-```
-
-### `DELETE /invitations/:id`
-Auth required, role: `super_admin` only.
-```json
-// response 200
-{ "data": null, "message": "invitation cancelled" }
-```
-
-### `GET /invitations/:token`
-Public. Candidate-facing resolution of an invite link before accepting it.
-```json
-// response 200
-{ "data": { "email": "string", "role": "string", "company_name": "string" }, "message": "invitation" }
+{ "data": PublicUser, "message": "user created" }
 ```
 
 ## Shapes
 
 **PublicUser** (never includes `password_hash`):
 ```json
-{ "id": "uuid", "company_id": "uuid", "full_name": "string", "email": "string", "role": "super_admin | hiring_manager", "is_active": "boolean", "created_at": "date" }
+{ "id": "uuid", "company_id": "uuid", "full_name": "string", "email": "string", "role": "super_admin | hiring_manager", "status": "pending_verification | active | inactive", "created_at": "date" }
 ```
 
 **Error response**, every non-2xx:
@@ -117,17 +87,16 @@ Public. Candidate-facing resolution of an invite link before accepting it.
 
 ## Database
 
-One Postgres database (Supabase), this repo owns three tables. See `prisma/schema.prisma` for
+One Postgres database (Supabase), this repo owns two tables. See `prisma/schema.prisma` for
 the exact source of truth, this is the relationship summary.
 
 ```
 Company (1) ----< (many) User
-Company (1) ----< (many) Invitation
+User    (1) ----< (many) User   (invited_by, self-referencing)
 ```
 
-- **Company**: `id, name, slug (unique), created_at`. A tenant.
-- **User**: `id, company_id (FK), full_name, email (unique), password_hash, role, invited_by, is_active, created_at`. A login account, always belongs to exactly one company.
-- **Invitation**: `id, company_id (FK, nullable), email, role, token (unique), invited_by, expires_at, accepted_at, created_at, pending_company_name, pending_company_slug`. `company_id` is null until accepted for a brand-new-company invite (super_admin inviting someone to found a new company); otherwise it's set from the start.
+- **Company**: `id, name (unique), created_at`. A tenant.
+- **User**: `id, company_id (FK), full_name, email (unique), password_hash, role, status, invited_by (FK to another user, nullable), created_at`. A login account, always belongs to exactly one company. `status` is `active` unless there's a reason for it not to be, `pending_verification` is reserved for a future verification step and unused today.
 
 Jobs, candidates, and interview sessions are not implemented in this service. Only the tables
 and endpoints listed above exist.

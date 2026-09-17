@@ -38,7 +38,7 @@ export const AuthMiddleware = async (req: Request, _res: Response, next: NextFun
     const usersRepository = container.resolve(UsersRepository);
     const user = await usersRepository.findById(payload.id);
     if (!user) return next(new HttpException(401, "User not found for this token"));
-    if (!user.is_active) return next(new HttpException(403, "Your account has been disabled"));
+    if (user.status !== "active") return next(new HttpException(403, "Your account is not active"));
 
     (req as RequestWithUser).user = toPublicUser(user);
     next();

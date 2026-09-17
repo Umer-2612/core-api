@@ -1,6 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
 import { container, injectable } from "tsyringe";
-import type { LoginDto, SetPasswordDto } from "@modules/auth/auth.dto";
+import type { LoginDto } from "@modules/auth/auth.dto";
 import type { RequestWithUser } from "@modules/auth/auth.interface";
 import { AuthService } from "@modules/auth/auth.service";
 import { NODE_ENV } from "@shared/config/env";
@@ -19,13 +19,6 @@ export class AuthController {
     const { cookie, token, user } = await this.authService.login(credentials);
     res.setHeader("Set-Cookie", [cookie]);
     res.status(200).json({ data: { user, token }, message: "login" });
-  });
-
-  public setPassword: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const payload = req.body as SetPasswordDto;
-    const { cookie, token, user } = await this.authService.setPassword(payload);
-    res.setHeader("Set-Cookie", [cookie]);
-    res.status(201).json({ data: { user, token }, message: "password set" });
   });
 
   /** DEV-ONLY. See AuthService.bootstrapAdmin's comment before touching this. */

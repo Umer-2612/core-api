@@ -21,11 +21,3 @@ export const loginSchema = z.object({
   password: z.string().min(1, { message: "Password is required" }),
 });
 export type LoginDto = z.infer<typeof loginSchema>;
-
-// POST /auth/set-password (accept an invitation by setting a password)
-export const setPasswordSchema = z.object({
-  token: z.string().min(1, { message: "Token is required" }),
-  full_name: z.string().min(1, { message: "Full name is required" }).max(120),
-  password: passwordSchema,
-});
-export type SetPasswordDto = z.infer<typeof setPasswordSchema>;

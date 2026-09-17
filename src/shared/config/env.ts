@@ -32,21 +32,10 @@ const EnvSchema = z
 
     DATABASE_URL: z.string().min(1),
 
-    FRONTEND_URL: z.string().url().default("http://localhost:3000"),
-    INVITATION_EXPIRY_HOURS: z.coerce.number().int().positive().default(48),
-
-    SMTP_HOST: z.string().optional(),
-    SMTP_PORT: z.coerce.number().int().positive().default(587),
-    SMTP_SECURE: booleanFromString(false),
-    SMTP_USER: z.string().optional(),
-    SMTP_PASS: z.string().optional(),
-    SMTP_FROM: z.string().default("Interview Platform <no-reply@localhost>"),
-
     SUPER_ADMIN_EMAIL: z.string().email().optional(),
     SUPER_ADMIN_PASSWORD: z.string().min(8).optional(),
     SUPER_ADMIN_NAME: z.string().min(1).optional(),
     SUPER_ADMIN_COMPANY_NAME: z.string().min(1).optional(),
-    SUPER_ADMIN_COMPANY_SLUG: z.string().min(1).optional(),
   })
   .strip();
 
@@ -70,21 +59,10 @@ export const CREDENTIALS = env.CREDENTIALS;
 
 export const DATABASE_URL = env.DATABASE_URL;
 
-export const FRONTEND_URL = env.FRONTEND_URL;
-export const INVITATION_EXPIRY_HOURS = env.INVITATION_EXPIRY_HOURS;
-
-export const SMTP_HOST = env.SMTP_HOST;
-export const SMTP_PORT = env.SMTP_PORT;
-export const SMTP_SECURE = env.SMTP_SECURE;
-export const SMTP_USER = env.SMTP_USER;
-export const SMTP_PASS = env.SMTP_PASS;
-export const SMTP_FROM = env.SMTP_FROM;
-
 export const SUPER_ADMIN_EMAIL = env.SUPER_ADMIN_EMAIL;
 export const SUPER_ADMIN_PASSWORD = env.SUPER_ADMIN_PASSWORD;
 export const SUPER_ADMIN_NAME = env.SUPER_ADMIN_NAME;
 export const SUPER_ADMIN_COMPANY_NAME = env.SUPER_ADMIN_COMPANY_NAME;
-export const SUPER_ADMIN_COMPANY_SLUG = env.SUPER_ADMIN_COMPANY_SLUG;
 
 export const CORS_ORIGIN_LIST =
   env.CORS_ORIGINS?.split(",")

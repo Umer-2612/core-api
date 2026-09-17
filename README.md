@@ -4,13 +4,15 @@ Backend service for the Interview Platform. Handles authentication and organizat
 
 ## What this service does
 
-- Authentication: login, invite-based account creation, session lookup, logout.
+- Authentication: login, direct account creation (no invite tokens), session lookup, logout.
 - Organizations ("companies"): every user belongs to exactly one company.
-- Invitations: the only way a new account gets created. There is no public signup form.
+- Account creation: a super admin creates a hiring manager and their company together in one
+  call; a hiring manager creates a peer in their own company the same way. There is no public
+  signup form and no invite-link/accept-password step.
 
-Two roles exist: `super_admin` (the platform owner, one account, created by a seed script, not
-through any API) and `hiring_manager` (created only by accepting an invitation, either into an
-existing company or founding a new one).
+Two roles exist: `super_admin` (the platform owner, one account, created by a seed script or
+`POST /auth/bootstrap-admin` in development) and `hiring_manager` (created directly by a super
+admin or another hiring manager, with a real password from the start).
 
 Full endpoint list and database schema: see `API.md`.
 
@@ -44,27 +46,36 @@ To run it without Docker (requires Node.js 20+ installed locally):
 
 ```bash
 npm install
-npm run prisma:migrate
+npm run prisma:push
 npm run dev
 ```
 
+## Applying schema changes
+
+`DATABASE_URL` points at Supabase's session pooler, not a true direct connection (see
+`secrets-vault`'s `vault.env.template` for why), and `prisma migrate dev` needs a direct
+connection to manage its shadow database. Use `npm run prisma:push` instead whenever
+`prisma/schema.prisma` changes, it pushes the schema straight to the database with no shadow
+database involved. Fine for a project at this stage; revisit if this ever needs real migration
+history.
+
 ## Creating the first account
 
-There is no signup form. The first account (the super admin) is created by running:
+There is no signup form. The first account (the super admin) is created either by running:
 
 ```bash
 npm run seed:admin
 ```
 
-Every other account is created by an existing admin sending an invitation; the invited person
-accepts it through `web-frontend`'s `/invite/[token]` page, which calls this service's
-`POST /auth/set-password`.
+or, in development, by calling `POST /auth/bootstrap-admin` (see `API.md`).
+
+Every other account is created directly by an existing admin, through `POST /users`, no invite
+link or separate accept-password step.
 
 ## Database
 
 One Postgres database, hosted on Supabase, shared across every repo in this project. This
-service owns three tables: `companies`, `users`, `invitations`. Full schema and relationships:
-see `API.md`.
+service owns two tables: `companies`, `users`. Full schema and relationships: see `API.md`.
 
 ## Tests
 
@@ -77,7 +88,7 @@ Runs without a database connection; the test suite uses in-memory fakes for data
 
 ```
 src/
-  modules/     one folder per domain area: auth, invitations, users, companies, email
+  modules/     one folder per domain area: auth, users, companies
   shared/      config, middleware, shared types, utilities
   db/          Postgres connection setup (Prisma)
   app.ts       Express app (middleware, routes, error handling)
