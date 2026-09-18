@@ -156,6 +156,27 @@ an empty one, if the PDF couldn't be parsed at all).
 { "data": CandidateProfile, "message": "candidate profile" }
 ```
 
+### `GET /jobs/:id/candidates/:candidateId/interviews`
+Auth required, role: `super_admin` or `hiring_manager`, same visibility rule as `GET /jobs/:id`.
+Every interview ever scheduled for this candidate, newest first.
+```json
+// response 200
+{ "data": InterviewSessionWithRounds[], "message": "interview sessions" }
+```
+
+### `POST /jobs/:id/candidates/:candidateId/interviews`
+Auth required, role: `hiring_manager` only, and the job must belong to their own company.
+Creates the session and its three rounds (`dsa`, `vscode`, `technical_ai`, in that order)
+together, atomically. Only scheduling exists so far, the rounds themselves (the actual DSA
+editor, VSCode sandbox, and AI technical interview) aren't implemented yet, each round is
+created with `status: pending` and nothing else.
+```json
+// request
+{ "scheduled_at": "string (ISO 8601 datetime)" }
+// response 201
+{ "data": InterviewSessionWithRounds, "message": "interview scheduled" }
+```
+
 ## Shapes
 
 **PublicUser** (never includes `password_hash`):
@@ -178,19 +199,28 @@ an empty one, if the PDF couldn't be parsed at all).
 { "id": "uuid", "candidate_id": "uuid", "phone": "string | null", "summary": "string | null", "skills": "string[]", "experience": [{ "role": "string", "company": "string", "years": "string", "bullets": "string[]" }], "created_at": "date" }
 ```
 
+**InterviewSessionWithRounds**:
+```json
+{ "id": "uuid", "job_id": "uuid", "candidate_id": "uuid", "scheduled_at": "date", "status": "scheduled | completed | cancelled", "created_at": "date", "rounds": [{ "id": "uuid", "round_type": "dsa | vscode | technical_ai", "sequence": "number", "status": "pending | completed", "created_at": "date" }] }
+```
+
 ## Database
 
-One Postgres database (Supabase), this repo owns five tables. See `prisma/schema.prisma` for
+One Postgres database (Supabase), this repo owns seven tables. See `prisma/schema.prisma` for
 the exact source of truth, this is the relationship summary.
 
 ```
-Company (1) ----< (many) User
-User    (1) ----< (many) User               (invited_by, self-referencing)
-Company (1) ----< (many) Job
-User    (1) ----< (many) Job                (created_by)
-Job     (1) ----< (many) Candidate
-User    (1) ----< (many) Candidate          (created_by)
+Company   (1) ----< (many) User
+User      (1) ----< (many) User                    (invited_by, self-referencing)
+Company   (1) ----< (many) Job
+User      (1) ----< (many) Job                      (created_by)
+Job       (1) ----< (many) Candidate
+User      (1) ----< (many) Candidate                (created_by)
 Candidate (1) ----( 0 or 1 ) CandidateProfile
+Job       (1) ----< (many) InterviewSession
+Candidate (1) ----< (many) InterviewSession
+User      (1) ----< (many) InterviewSession          (created_by)
+InterviewSession (1) ----< (exactly 3) InterviewRound
 ```
 
 - **Company**: `id, name (unique), created_at`. A tenant.
@@ -198,6 +228,5 @@ Candidate (1) ----( 0 or 1 ) CandidateProfile
 - **Job**: `id, company_id (FK), title, description, created_by (FK), created_at`. Only a hiring manager creates these.
 - **Candidate**: `id, job_id (FK), full_name, email (nullable), resume_file_name, resume_key, created_by (FK), created_at`. One row per uploaded resume. `resume_key` is the S3 object key, the file itself never touches Postgres. `full_name`/`email` come from the resume parser when it finds them, otherwise `full_name` falls back to the file name and `email` stays null.
 - **CandidateProfile**: `id, candidate_id (FK, unique), phone (nullable), summary (nullable), skills (string array), experience (JSON array of `{ role, company, years, bullets }`), created_at`. What the resume parser found beyond name and email, one row per candidate, created (possibly empty) at upload time regardless of whether the parse fully succeeded.
-
-Interview sessions are not implemented in this service. Only the tables and endpoints listed
-above exist.
+- **InterviewSession**: `id, job_id (FK), candidate_id (FK), scheduled_at, status, created_by (FK), created_at`. One row per scheduled interview. A candidate can have more than one, past or future.
+- **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai), sequence, status, created_at`. Always exactly three per session, created alongside it. No round has anything beyond `status: pending` yet, running the actual rounds isn't implemented in this service.

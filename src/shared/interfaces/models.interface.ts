@@ -3,9 +3,40 @@
  * shapes (unlike Mongoose, there's no lean()/ObjectId mapping needed), so we
  * re-export its types directly instead of hand-rolling duplicates.
  */
-import type { Candidate, CandidateProfile, Company, Job, User, UserRole, UserStatus } from "@prisma/client";
+import type {
+  Candidate,
+  CandidateProfile,
+  Company,
+  InterviewRound,
+  InterviewRoundStatus,
+  InterviewRoundType,
+  InterviewSession,
+  InterviewSessionStatus,
+  Job,
+  User,
+  UserRole,
+  UserStatus,
+} from "@prisma/client";
 
-export type { Candidate, CandidateProfile, Company, Job, User, UserRole, UserStatus };
+export type {
+  Candidate,
+  CandidateProfile,
+  Company,
+  InterviewRound,
+  InterviewRoundStatus,
+  InterviewRoundType,
+  InterviewSession,
+  InterviewSessionStatus,
+  Job,
+  User,
+  UserRole,
+  UserStatus,
+};
+
+/** An interview session with its (always exactly three) rounds attached. */
+export interface InterviewSessionWithRounds extends InterviewSession {
+  rounds: InterviewRound[];
+}
 
 /** Full user row, including the password hash. Never send this to a client. */
 export type UserRecord = User;
