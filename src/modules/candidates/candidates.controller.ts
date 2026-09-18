@@ -39,4 +39,14 @@ export class CandidatesController {
     res.setHeader("Content-Disposition", `attachment; filename="${resume.fileName}"`);
     res.send(resume.buffer);
   });
+
+  public getProfile: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const { user } = req as RequestWithUser;
+    const profile = await this.candidatesService.getProfileOrThrow(
+      req.params.id as string,
+      req.params.candidateId as string,
+      user,
+    );
+    res.status(200).json({ data: profile, message: "candidate profile" });
+  });
 }

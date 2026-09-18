@@ -70,14 +70,32 @@ model Candidate {
   id               String   @id @default(uuid())
   job_id           String
   full_name        String
+  email            String?
   resume_file_name String
   resume_key       String
   created_by       String
   created_at       DateTime @default(now())
 
-  job     Job  @relation(fields: [job_id], references: [id], onDelete: Cascade)
-  creator User @relation("CandidateCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
+  job     Job               @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  creator User              @relation("CandidateCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
+  profile CandidateProfile?
 
   @@index([job_id])
   @@map("candidates")
+}
+
+/// What the resume extractor pulled out of the PDF text, beyond the name and
+/// email already on Candidate. One row per candidate, created at upload time.
+model CandidateProfile {
+  id           String   @id @default(uuid())
+  candidate_id String   @unique
+  phone        String?
+  summary      String?
+  skills       String[]
+  experience   Json
+  created_at   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+
+  @@map("candidate_profiles")
 }

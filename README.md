@@ -10,7 +10,9 @@ Backend service for the Interview Platform. Handles authentication and organizat
   call. There is no public signup form and no invite-link/accept-password step.
 - Jobs: a hiring manager creates a job (title and description) in their own company.
 - Candidates: a hiring manager bulk-uploads PDF resumes to a job, each PDF becomes one
-  candidate. The resume itself is stored in S3, only its key lives in Postgres.
+  candidate. The resume itself is stored in S3, only its key lives in Postgres. Each PDF is
+  also parsed (regex/heuristics, no AI) for a name, email, phone, summary, skills, and work
+  experience, the parsed result lives in a separate `CandidateProfile` row.
 
 Two roles exist: `super_admin` (the platform owner, one account, created by a seed script or
 `POST /auth/bootstrap-admin` in development) and `hiring_manager` (created only by a super
@@ -78,8 +80,8 @@ invite link or separate accept-password step.
 ## Database
 
 One Postgres database, hosted on Supabase, shared across every repo in this project. This
-service owns four tables: `companies`, `users`, `jobs`, `candidates`. Full schema and
-relationships: see `API.md`.
+service owns five tables: `companies`, `users`, `jobs`, `candidates`, `candidate_profiles`.
+Full schema and relationships: see `API.md`.
 
 ## Resume storage (S3)
 

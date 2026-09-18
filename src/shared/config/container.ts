@@ -3,6 +3,7 @@ import { container } from "tsyringe";
 import { AuthController } from "@modules/auth/auth.controller";
 import { AuthRoute } from "@modules/auth/auth.routes";
 import { AuthService } from "@modules/auth/auth.service";
+import { CandidateProfileRepository } from "@modules/candidates/candidate-profile.repository";
 import { CandidatesController } from "@modules/candidates/candidates.controller";
 import { CandidatesRepository } from "@modules/candidates/candidates.repository";
 import { CandidatesService } from "@modules/candidates/candidates.service";
@@ -30,19 +31,21 @@ export function setupContainer() {
   const companiesRepository = new CompaniesRepository();
   const jobsRepository = new JobsRepository();
   const candidatesRepository = new CandidatesRepository();
+  const candidateProfileRepository = new CandidateProfileRepository();
   const resumeStorage = new S3ResumeStorage();
 
   container.registerInstance(UsersRepository, usersRepository);
   container.registerInstance(CompaniesRepository, companiesRepository);
   container.registerInstance(JobsRepository, jobsRepository);
   container.registerInstance(CandidatesRepository, candidatesRepository);
+  container.registerInstance(CandidateProfileRepository, candidateProfileRepository);
   container.registerInstance(S3ResumeStorage, resumeStorage);
 
   // Business layer: services.
   const authService = new AuthService(usersRepository, companiesRepository);
   const usersService = new UsersService(usersRepository, companiesRepository);
   const jobsService = new JobsService(jobsRepository);
-  const candidatesService = new CandidatesService(candidatesRepository, jobsService, resumeStorage);
+  const candidatesService = new CandidatesService(candidatesRepository, jobsService, resumeStorage, candidateProfileRepository);
   const companiesService = new CompaniesService(companiesRepository, usersRepository);
 
   container.registerInstance(AuthService, authService);

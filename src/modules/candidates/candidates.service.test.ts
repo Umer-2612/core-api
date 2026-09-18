@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import {
+  experienceToJson,
+  type CreateCandidateProfileData,
+  type ICandidateProfileRepository,
+} from "@modules/candidates/candidate-profile.repository";
 import type { CreateCandidateData, ICandidatesRepository } from "@modules/candidates/candidates.repository";
 import { CandidatesService } from "@modules/candidates/candidates.service";
 import type { IResumeStorage } from "@modules/candidates/resume-storage";
 import type { CreateJobData, IJobsRepository } from "@modules/jobs/jobs.repository";
 import { JobsService } from "@modules/jobs/jobs.service";
-import type { Candidate, Job, PublicUser } from "@shared/interfaces/models.interface";
+import type { Candidate, CandidateProfile, Job, PublicUser } from "@shared/interfaces/models.interface";
 
 function makeJob(overrides: Partial<Job> = {}): Job {
   return {
@@ -23,6 +28,7 @@ function makeCandidate(overrides: Partial<Candidate> = {}): Candidate {
     id: "candidate-1",
     job_id: "job-1",
     full_name: "Jane Doe",
+    email: null,
     resume_file_name: "jane-doe.pdf",
     resume_key: "resumes/job-1/candidate-1-jane-doe.pdf",
     created_by: "hm-1",
@@ -98,18 +104,49 @@ class FakeResumeStorage implements IResumeStorage {
   }
 }
 
+function makeProfile(overrides: Partial<CandidateProfile> = {}): CandidateProfile {
+  return {
+    id: "profile-1",
+    candidate_id: "candidate-1",
+    phone: null,
+    summary: null,
+    skills: [],
+    experience: [],
+    created_at: new Date("2026-01-01T00:00:00Z"),
+    ...overrides,
+  };
+}
+
+class FakeCandidateProfileRepository implements ICandidateProfileRepository {
+  profiles: CandidateProfile[] = [];
+  async findByCandidateId(candidateId: string) {
+    return this.profiles.find((p) => p.candidate_id === candidateId) ?? null;
+  }
+  async create(data: CreateCandidateProfileData) {
+    const profile = makeProfile({
+      id: `profile-${this.profiles.length + 1}`,
+      ...data,
+      experience: experienceToJson(data.experience) as CandidateProfile["experience"],
+    });
+    this.profiles.push(profile);
+    return profile;
+  }
+}
+
 describe("CandidatesService", () => {
   let jobsRepo: FakeJobsRepository;
   let candidatesRepo: FakeCandidatesRepository;
   let storage: FakeResumeStorage;
+  let profilesRepo: FakeCandidateProfileRepository;
   let service: CandidatesService;
 
   beforeEach(() => {
     jobsRepo = new FakeJobsRepository();
     candidatesRepo = new FakeCandidatesRepository();
     storage = new FakeResumeStorage();
+    profilesRepo = new FakeCandidateProfileRepository();
     jobsRepo.jobs.push(makeJob());
-    service = new CandidatesService(candidatesRepo, new JobsService(jobsRepo), storage);
+    service = new CandidatesService(candidatesRepo, new JobsService(jobsRepo), storage, profilesRepo);
   });
 
   describe("uploadResumes", () => {
@@ -124,6 +161,16 @@ describe("CandidatesService", () => {
       expect(result[0]?.resume_file_name).toBe("jane-doe_resume.pdf");
       expect(result[0]).not.toHaveProperty("resume_key");
       expect(storage.objects.size).toBe(1);
+    });
+
+    it("still creates a candidate and an empty profile when the PDF can't be parsed", async () => {
+      // makeFile's buffer isn't a real PDF, extraction fails and falls back
+      // rather than failing the whole upload.
+      const result = await service.uploadResumes("job-1", [makeFile()], makeUser());
+
+      expect(result).toHaveLength(1);
+      expect(profilesRepo.profiles).toHaveLength(1);
+      expect(profilesRepo.profiles[0]).toMatchObject({ phone: null, summary: null, skills: [], experience: [] });
     });
 
     it("403s uploading to another company's job", async () => {
@@ -156,6 +203,31 @@ describe("CandidatesService", () => {
       jobsRepo.jobs.push(makeJob({ id: "job-2" }));
       candidatesRepo.candidates.push(makeCandidate({ job_id: "job-2" }));
       await expect(service.getResumeOrThrow("job-1", "candidate-1", makeUser())).rejects.toMatchObject({ status: 404 });
+    });
+  });
+
+  describe("getProfileOrThrow", () => {
+    it("returns the candidate's extracted profile", async () => {
+      candidatesRepo.candidates.push(makeCandidate());
+      profilesRepo.profiles.push(makeProfile({ phone: "555-0132", skills: ["TypeScript"] }));
+
+      const profile = await service.getProfileOrThrow("job-1", "candidate-1", makeUser());
+
+      expect(profile.phone).toBe("555-0132");
+      expect(profile.skills).toEqual(["TypeScript"]);
+    });
+
+    it("404s when the candidate has no profile row", async () => {
+      candidatesRepo.candidates.push(makeCandidate());
+      await expect(service.getProfileOrThrow("job-1", "candidate-1", makeUser())).rejects.toMatchObject({ status: 404 });
+    });
+
+    it("403s a hiring manager viewing another company's candidate", async () => {
+      jobsRepo.jobs.push(makeJob({ id: "job-2", company_id: "company-2" }));
+      candidatesRepo.candidates.push(makeCandidate({ job_id: "job-2" }));
+      profilesRepo.profiles.push(makeProfile());
+
+      await expect(service.getProfileOrThrow("job-2", "candidate-1", makeUser())).rejects.toMatchObject({ status: 403 });
     });
   });
 });
