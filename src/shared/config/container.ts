@@ -7,7 +7,10 @@ import { CandidatesController } from "@modules/candidates/candidates.controller"
 import { CandidatesRepository } from "@modules/candidates/candidates.repository";
 import { CandidatesService } from "@modules/candidates/candidates.service";
 import { S3ResumeStorage } from "@modules/candidates/resume-storage";
+import { CompaniesController } from "@modules/companies/companies.controller";
 import { CompaniesRepository } from "@modules/companies/companies.repository";
+import { CompaniesRoute } from "@modules/companies/companies.routes";
+import { CompaniesService } from "@modules/companies/companies.service";
 import { JobsController } from "@modules/jobs/jobs.controller";
 import { JobsRepository } from "@modules/jobs/jobs.repository";
 import { JobsRoute } from "@modules/jobs/jobs.routes";
@@ -40,20 +43,24 @@ export function setupContainer() {
   const usersService = new UsersService(usersRepository, companiesRepository);
   const jobsService = new JobsService(jobsRepository);
   const candidatesService = new CandidatesService(candidatesRepository, jobsService, resumeStorage);
+  const companiesService = new CompaniesService(companiesRepository, usersRepository);
 
   container.registerInstance(AuthService, authService);
   container.registerInstance(UsersService, usersService);
   container.registerInstance(JobsService, jobsService);
   container.registerInstance(CandidatesService, candidatesService);
+  container.registerInstance(CompaniesService, companiesService);
 
   // Presentation layer: controllers and routes (auto-injected).
   container.registerSingleton(AuthController);
   container.registerSingleton(UsersController);
   container.registerSingleton(JobsController);
   container.registerSingleton(CandidatesController);
+  container.registerSingleton(CompaniesController);
   container.registerSingleton(AuthRoute);
   container.registerSingleton(UsersRoute);
   container.registerSingleton(JobsRoute);
+  container.registerSingleton(CompaniesRoute);
 
   isContainerInitialized = true;
 }
