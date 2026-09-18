@@ -5,6 +5,7 @@ export interface CreateCandidateData {
   id: string;
   job_id: string;
   full_name: string;
+  email: string | null;
   resume_file_name: string;
   resume_key: string;
   created_by: string;
@@ -17,7 +18,8 @@ export interface ICandidatesRepository {
 }
 
 /** Data access for the `candidates` table (Prisma / Postgres). The resume file itself lives
- * in S3, this table only stores its key (see resume-storage.ts). */
+ * in S3, this table only stores its key (see resume-storage.ts). Extracted resume details
+ * (phone, summary, skills, experience) live in CandidateProfile, see candidate-profile.repository.ts. */
 export class CandidatesRepository implements ICandidatesRepository {
   async findById(id: string): Promise<Candidate | null> {
     return prisma.candidate.findUnique({ where: { id } });
