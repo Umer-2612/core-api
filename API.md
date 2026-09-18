@@ -71,6 +71,28 @@ link involved.
 { "data": PublicUser, "message": "user created" }
 ```
 
+### `GET /companies`
+Auth required, role: `super_admin` only. Platform-owner oversight, not something a hiring
+manager needs.
+```json
+// response 200
+{ "data": Company[], "message": "companies" }
+```
+
+### `GET /companies/:id`
+Auth required, role: `super_admin` only.
+```json
+// response 200
+{ "data": Company, "message": "company" }
+```
+
+### `GET /companies/:id/users`
+Auth required, role: `super_admin` only.
+```json
+// response 200
+{ "data": PublicUser[], "message": "company users" }
+```
+
 ### `GET /jobs`
 Auth required, role: `super_admin` or `hiring_manager`. A hiring manager sees only their own
 company's jobs; super_admin sees every company's, read-only, super admins cannot create jobs.

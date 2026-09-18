@@ -2,6 +2,7 @@ import "reflect-metadata";
 import "@shared/config/env";
 import { container } from "tsyringe";
 import { AuthRoute } from "@modules/auth/auth.routes";
+import { CompaniesRoute } from "@modules/companies/companies.routes";
 import { JobsRoute } from "@modules/jobs/jobs.routes";
 import { UsersRoute } from "@modules/users/users.routes";
 import { setupContainer } from "@shared/config/container";
@@ -15,7 +16,12 @@ async function bootstrap() {
 
   setupContainer();
 
-  const routes = [container.resolve(AuthRoute), container.resolve(UsersRoute), container.resolve(JobsRoute)];
+  const routes = [
+    container.resolve(AuthRoute),
+    container.resolve(UsersRoute),
+    container.resolve(JobsRoute),
+    container.resolve(CompaniesRoute),
+  ];
 
   const appInstance = new App(routes);
   const server = appInstance.listen();

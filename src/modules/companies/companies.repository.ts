@@ -17,6 +17,7 @@ export interface CreateCompanyWithUserData {
 export interface ICompaniesRepository {
   findById(id: string): Promise<Company | null>;
   findByName(name: string): Promise<Company | null>;
+  findAll(): Promise<Company[]>;
   create(data: CreateCompanyData): Promise<Company>;
   /** Atomically creates a company and its first user (super admin creating a hiring manager). */
   createWithUser(data: CreateCompanyWithUserData): Promise<{ company: Company; user: UserRecord }>;
@@ -30,6 +31,10 @@ export class CompaniesRepository implements ICompaniesRepository {
 
   async findByName(name: string): Promise<Company | null> {
     return prisma.company.findUnique({ where: { name } });
+  }
+
+  async findAll(): Promise<Company[]> {
+    return prisma.company.findMany({ orderBy: { created_at: "desc" } });
   }
 
   async create(data: CreateCompanyData): Promise<Company> {

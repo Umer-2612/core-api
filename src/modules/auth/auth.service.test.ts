@@ -67,6 +67,9 @@ class FakeCompaniesRepository implements ICompaniesRepository {
   async findByName(name: string) {
     return this.companies.find((c) => c.name === name) ?? null;
   }
+  async findAll() {
+    return this.companies;
+  }
   async create(data: { name: string }) {
     const company: Company = { id: `company-${this.companies.length + 1}`, ...data, created_at: new Date() };
     this.companies.push(company);
