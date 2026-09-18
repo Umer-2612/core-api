@@ -114,7 +114,9 @@ export class CandidatesService {
     return profile;
   }
 
-  private async getCandidateInJobOrThrow(jobId: string, candidateId: string, viewer: PublicUser) {
+  /** Shared by InterviewSessionsService too: 404s if the candidate doesn't exist or
+   * belongs to a different job, 403s if the viewer can't see this job at all. */
+  public async getCandidateInJobOrThrow(jobId: string, candidateId: string, viewer: PublicUser) {
     await this.jobsService.getVisibleOrThrow(jobId, viewer);
     const candidate = await this.candidatesRepository.findById(candidateId);
     if (!candidate || candidate.job_id !== jobId) throw new HttpException(404, "Candidate not found");

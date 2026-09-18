@@ -18,6 +18,23 @@ enum UserStatus {
   inactive
 }
 
+enum InterviewSessionStatus {
+  scheduled
+  completed
+  cancelled
+}
+
+enum InterviewRoundType {
+  dsa
+  vscode
+  technical_ai
+}
+
+enum InterviewRoundStatus {
+  pending
+  completed
+}
+
 model Company {
   id         String   @id @default(uuid())
   name       String   @unique
@@ -40,11 +57,12 @@ model User {
   invited_by    String?
   created_at    DateTime   @default(now())
 
-  company            Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  inviter            User?       @relation("UserInvitedBy", fields: [invited_by], references: [id], onDelete: SetNull)
-  invitees           User[]      @relation("UserInvitedBy")
-  created_jobs       Job[]       @relation("JobCreatedBy")
-  created_candidates Candidate[] @relation("CandidateCreatedBy")
+  company                    Company            @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  inviter                    User?              @relation("UserInvitedBy", fields: [invited_by], references: [id], onDelete: SetNull)
+  invitees                   User[]             @relation("UserInvitedBy")
+  created_jobs               Job[]              @relation("JobCreatedBy")
+  created_candidates         Candidate[]        @relation("CandidateCreatedBy")
+  created_interview_sessions InterviewSession[] @relation("InterviewSessionCreatedBy")
 
   @@index([company_id])
   @@map("users")
@@ -58,9 +76,10 @@ model Job {
   created_by  String
   created_at  DateTime @default(now())
 
-  company    Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  creator    User        @relation("JobCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
-  candidates Candidate[]
+  company            Company            @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  creator            User               @relation("JobCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
+  candidates         Candidate[]
+  interview_sessions InterviewSession[]
 
   @@index([company_id])
   @@map("jobs")
@@ -76,12 +95,49 @@ model Candidate {
   created_by       String
   created_at       DateTime @default(now())
 
-  job     Job               @relation(fields: [job_id], references: [id], onDelete: Cascade)
-  creator User              @relation("CandidateCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
-  profile CandidateProfile?
+  job                Job                @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  creator            User               @relation("CandidateCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
+  profile            CandidateProfile?
+  interview_sessions InterviewSession[]
 
   @@index([job_id])
   @@map("candidates")
+}
+
+/// A scheduled interview for one candidate, for one job. Always has exactly
+/// three InterviewRound rows (dsa, vscode, technical_ai) created alongside it,
+/// only scheduling exists so far, not the rounds themselves being run.
+model InterviewSession {
+  id           String                 @id @default(uuid())
+  job_id       String
+  candidate_id String
+  scheduled_at DateTime
+  status       InterviewSessionStatus @default(scheduled)
+  created_by   String
+  created_at   DateTime               @default(now())
+
+  job       Job              @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  candidate Candidate        @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  creator   User             @relation("InterviewSessionCreatedBy", fields: [created_by], references: [id], onDelete: Cascade)
+  rounds    InterviewRound[]
+
+  @@index([job_id])
+  @@index([candidate_id])
+  @@map("interview_sessions")
+}
+
+model InterviewRound {
+  id         String               @id @default(uuid())
+  session_id String
+  round_type InterviewRoundType
+  sequence   Int
+  status     InterviewRoundStatus @default(pending)
+  created_at DateTime             @default(now())
+
+  session InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id])
+  @@map("interview_rounds")
 }
 
 /// What the resume extractor pulled out of the PDF text, beyond the name and

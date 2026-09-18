@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { container, injectable } from "tsyringe";
 import { CandidatesController } from "@modules/candidates/candidates.controller";
+import { InterviewSessionsController } from "@modules/interview-sessions/interview-sessions.controller";
+import { scheduleInterviewSchema } from "@modules/interview-sessions/interview-sessions.dto";
 import { createJobSchema } from "@modules/jobs/jobs.dto";
 import { JobsController } from "@modules/jobs/jobs.controller";
 import { AuthMiddleware } from "@shared/middlewares/auth.middleware";
@@ -15,10 +17,12 @@ export class JobsRoute implements Routes {
   public path = "/jobs";
   private readonly jobsController: JobsController;
   private readonly candidatesController: CandidatesController;
+  private readonly interviewSessionsController: InterviewSessionsController;
 
   constructor() {
     this.jobsController = container.resolve(JobsController);
     this.candidatesController = container.resolve(CandidatesController);
+    this.interviewSessionsController = container.resolve(InterviewSessionsController);
     this.initializeRoutes();
   }
 
@@ -57,6 +61,20 @@ export class JobsRoute implements Routes {
       AuthMiddleware,
       requireRole("super_admin", "hiring_manager"),
       this.candidatesController.getProfile,
+    );
+
+    this.router.get(
+      "/:id/candidates/:candidateId/interviews",
+      AuthMiddleware,
+      requireRole("super_admin", "hiring_manager"),
+      this.interviewSessionsController.list,
+    );
+    this.router.post(
+      "/:id/candidates/:candidateId/interviews",
+      AuthMiddleware,
+      requireRole("hiring_manager"),
+      ValidationMiddleware(scheduleInterviewSchema),
+      this.interviewSessionsController.schedule,
     );
   }
 }

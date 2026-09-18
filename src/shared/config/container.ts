@@ -12,6 +12,9 @@ import { CompaniesController } from "@modules/companies/companies.controller";
 import { CompaniesRepository } from "@modules/companies/companies.repository";
 import { CompaniesRoute } from "@modules/companies/companies.routes";
 import { CompaniesService } from "@modules/companies/companies.service";
+import { InterviewSessionsController } from "@modules/interview-sessions/interview-sessions.controller";
+import { InterviewSessionsRepository } from "@modules/interview-sessions/interview-sessions.repository";
+import { InterviewSessionsService } from "@modules/interview-sessions/interview-sessions.service";
 import { JobsController } from "@modules/jobs/jobs.controller";
 import { JobsRepository } from "@modules/jobs/jobs.repository";
 import { JobsRoute } from "@modules/jobs/jobs.routes";
@@ -32,6 +35,7 @@ export function setupContainer() {
   const jobsRepository = new JobsRepository();
   const candidatesRepository = new CandidatesRepository();
   const candidateProfileRepository = new CandidateProfileRepository();
+  const interviewSessionsRepository = new InterviewSessionsRepository();
   const resumeStorage = new S3ResumeStorage();
 
   container.registerInstance(UsersRepository, usersRepository);
@@ -39,6 +43,7 @@ export function setupContainer() {
   container.registerInstance(JobsRepository, jobsRepository);
   container.registerInstance(CandidatesRepository, candidatesRepository);
   container.registerInstance(CandidateProfileRepository, candidateProfileRepository);
+  container.registerInstance(InterviewSessionsRepository, interviewSessionsRepository);
   container.registerInstance(S3ResumeStorage, resumeStorage);
 
   // Business layer: services.
@@ -47,12 +52,14 @@ export function setupContainer() {
   const jobsService = new JobsService(jobsRepository);
   const candidatesService = new CandidatesService(candidatesRepository, jobsService, resumeStorage, candidateProfileRepository);
   const companiesService = new CompaniesService(companiesRepository, usersRepository);
+  const interviewSessionsService = new InterviewSessionsService(interviewSessionsRepository, candidatesService);
 
   container.registerInstance(AuthService, authService);
   container.registerInstance(UsersService, usersService);
   container.registerInstance(JobsService, jobsService);
   container.registerInstance(CandidatesService, candidatesService);
   container.registerInstance(CompaniesService, companiesService);
+  container.registerInstance(InterviewSessionsService, interviewSessionsService);
 
   // Presentation layer: controllers and routes (auto-injected).
   container.registerSingleton(AuthController);
@@ -60,6 +67,7 @@ export function setupContainer() {
   container.registerSingleton(JobsController);
   container.registerSingleton(CandidatesController);
   container.registerSingleton(CompaniesController);
+  container.registerSingleton(InterviewSessionsController);
   container.registerSingleton(AuthRoute);
   container.registerSingleton(UsersRoute);
   container.registerSingleton(JobsRoute);

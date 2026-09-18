@@ -13,6 +13,9 @@ Backend service for the Interview Platform. Handles authentication and organizat
   candidate. The resume itself is stored in S3, only its key lives in Postgres. Each PDF is
   also parsed (regex/heuristics, no AI) for a name, email, phone, summary, skills, and work
   experience, the parsed result lives in a separate `CandidateProfile` row.
+- Interviews: a hiring manager schedules an interview for a candidate. Scheduling creates
+  three rounds (`dsa`, `vscode`, `technical_ai`) alongside it; running those rounds isn't
+  implemented in this service yet, only scheduling them is.
 
 Two roles exist: `super_admin` (the platform owner, one account, created by a seed script or
 `POST /auth/bootstrap-admin` in development) and `hiring_manager` (created only by a super
@@ -80,8 +83,8 @@ invite link or separate accept-password step.
 ## Database
 
 One Postgres database, hosted on Supabase, shared across every repo in this project. This
-service owns five tables: `companies`, `users`, `jobs`, `candidates`, `candidate_profiles`.
-Full schema and relationships: see `API.md`.
+service owns seven tables: `companies`, `users`, `jobs`, `candidates`, `candidate_profiles`,
+`interview_sessions`, `interview_rounds`. Full schema and relationships: see `API.md`.
 
 ## Resume storage (S3)
 
@@ -101,7 +104,7 @@ Runs without a database connection; the test suite uses in-memory fakes for data
 
 ```
 src/
-  modules/     one folder per domain area: auth, users, companies, jobs, candidates
+  modules/     one folder per domain area: auth, users, companies, jobs, candidates, interview-sessions
   shared/      config, middleware, shared types, utilities
   db/          Postgres connection setup (Prisma)
   app.ts       Express app (middleware, routes, error handling)
