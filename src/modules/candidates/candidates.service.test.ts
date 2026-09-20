@@ -206,6 +206,30 @@ describe("CandidatesService", () => {
     });
   });
 
+  describe("getByIdOrThrow", () => {
+    it("returns the candidate without the resume key", async () => {
+      candidatesRepo.candidates.push(makeCandidate({ full_name: "Jane Doe", email: "jane@acme.com" }));
+
+      const candidate = await service.getByIdOrThrow("job-1", "candidate-1", makeUser());
+
+      expect(candidate.full_name).toBe("Jane Doe");
+      expect(candidate.email).toBe("jane@acme.com");
+      expect(candidate).not.toHaveProperty("resume_key");
+    });
+
+    it("404s when the candidate belongs to a different job", async () => {
+      jobsRepo.jobs.push(makeJob({ id: "job-2" }));
+      candidatesRepo.candidates.push(makeCandidate({ job_id: "job-2" }));
+      await expect(service.getByIdOrThrow("job-1", "candidate-1", makeUser())).rejects.toMatchObject({ status: 404 });
+    });
+
+    it("403s a hiring manager viewing another company's candidate", async () => {
+      jobsRepo.jobs.push(makeJob({ id: "job-2", company_id: "company-2" }));
+      candidatesRepo.candidates.push(makeCandidate({ job_id: "job-2" }));
+      await expect(service.getByIdOrThrow("job-2", "candidate-1", makeUser())).rejects.toMatchObject({ status: 403 });
+    });
+  });
+
   describe("getProfileOrThrow", () => {
     it("returns the candidate's extracted profile", async () => {
       candidatesRepo.candidates.push(makeCandidate());

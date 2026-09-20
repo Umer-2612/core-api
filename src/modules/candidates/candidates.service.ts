@@ -101,6 +101,11 @@ export class CandidatesService {
     return candidates.map(toPublicCandidate);
   }
 
+  public async getByIdOrThrow(jobId: string, candidateId: string, viewer: PublicUser): Promise<PublicCandidate> {
+    const candidate = await this.getCandidateInJobOrThrow(jobId, candidateId, viewer);
+    return toPublicCandidate(candidate);
+  }
+
   public async getResumeOrThrow(jobId: string, candidateId: string, viewer: PublicUser): Promise<ResumeDownload> {
     const candidate = await this.getCandidateInJobOrThrow(jobId, candidateId, viewer);
     const buffer = await this.resumeStorage.download(candidate.resume_key);

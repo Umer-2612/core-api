@@ -28,6 +28,16 @@ export class CandidatesController {
     res.status(200).json({ data: candidates, message: "candidates" });
   });
 
+  public getById: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const { user } = req as RequestWithUser;
+    const candidate = await this.candidatesService.getByIdOrThrow(
+      req.params.id as string,
+      req.params.candidateId as string,
+      user,
+    );
+    res.status(200).json({ data: candidate, message: "candidate" });
+  });
+
   public downloadResume: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { user } = req as RequestWithUser;
     const resume = await this.candidatesService.getResumeOrThrow(
