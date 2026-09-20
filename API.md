@@ -141,6 +141,15 @@ The PDF file itself is stored in S3, never in Postgres.
 { "data": PublicCandidate[], "message": "resumes uploaded" }
 ```
 
+### `GET /jobs/:id/candidates/:candidateId`
+Auth required, role: `super_admin` or `hiring_manager`, same visibility rule as `GET /jobs/:id`.
+Single candidate, same shape as an entry in `GET /jobs/:id/candidates`. 404 if the candidate
+doesn't exist or belongs to a different job.
+```json
+// response 200
+{ "data": PublicCandidate, "message": "candidate" }
+```
+
 ### `GET /jobs/:id/candidates/:candidateId/resume`
 Auth required, role: `super_admin` or `hiring_manager`, same visibility rule as `GET /jobs/:id`.
 Streams the PDF back (`Content-Type: application/pdf`, `Content-Disposition: attachment`),

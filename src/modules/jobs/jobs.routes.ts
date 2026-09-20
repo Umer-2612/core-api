@@ -51,6 +51,12 @@ export class JobsRoute implements Routes {
       this.candidatesController.upload,
     );
     this.router.get(
+      "/:id/candidates/:candidateId",
+      AuthMiddleware,
+      requireRole("super_admin", "hiring_manager"),
+      this.candidatesController.getById,
+    );
+    this.router.get(
       "/:id/candidates/:candidateId/resume",
       AuthMiddleware,
       requireRole("super_admin", "hiring_manager"),
