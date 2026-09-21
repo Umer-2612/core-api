@@ -115,7 +115,11 @@ const MONTH = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\\w*[\\s,]+\\d
 const DATE_RANGE_RE = new RegExp(`(${MONTH}|\\d{4})\\s*[-–—to]+\\s*(${MONTH}|\\d{4}|present|current)`, "i");
 const DATE_AT_END_RE = new RegExp(`(${MONTH}|\\d{4})\\s*[-–—to]+\\s*(${MONTH}|\\d{4}|present|current)\\s*$`, "i");
 const YEAR_ONLY_RE = /\b(19|20)\d{2}\b/;
-const BULLET_LINE_RE = /^[•▪▸◦·\-*]\s*/;
+const BULLET_LINE_RE = /^[•●○▪▸◦·\-*]\s*/;
+// Google Docs → PDF exports often render a nested list's second level as the
+// plain letter "o" rather than a real bullet glyph. Requiring a space then an
+// uppercase letter/digit/paren keeps this from matching real words like "of".
+const SUB_BULLET_RE = /^o\s+(?=[A-Z0-9(])/;
 
 // Context signals used to score name candidates.
 const JOB_TITLE_RE =
@@ -276,13 +280,69 @@ const TRAILING_FILLER = /\b(and|or|the|a|an|to|for|in|of|at|with|by|from|that|us
 const PAGE_NUMBER = /^\d+\s*[/\\]\s*\d+$/;
 const IS_URL = /^https?:\/\//i;
 
+/** Splits on `,` like String.split, but ignores commas nested inside "(...)"
+ * so "AWS(EKS, CloudFormation), Docker" doesn't shred the parenthetical group. */
+function splitTopLevelCommas(s: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of s) {
+    if (ch === "(") depth++;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+
+    if (ch === "," && depth === 0) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  parts.push(current);
+  return parts;
+}
+
+// "Label(sub1, sub2)" or "Label (sub1, sub2)": a category name immediately
+// followed by its own self-contained parenthetical sub-list.
+const LABELED_GROUP_RE = /^([^()]+?)\s*\(([^()]+)\)$/;
+
+/** Expands a "Label(sub1, sub2)" item into [Label, sub1, sub2]; passes any
+ * other item through unchanged. */
+function expandLabeledGroup(item: string): string[] {
+  const match = LABELED_GROUP_RE.exec(item);
+  if (!match) return [item];
+  return [match[1], ...match[2].split(",")];
+}
+
+/** Rejoins a line onto the previous one when the previous line ends with an
+ * unclosed "(": PDFs often wrap a parenthetical skills group mid-group. */
+function mergeWrappedParenLines(lines: string[]): string[] {
+  const merged: string[] = [];
+  let depth = 0;
+
+  for (const line of lines) {
+    if (depth > 0 && merged.length > 0) {
+      merged[merged.length - 1] = `${merged[merged.length - 1]} ${line}`.trim();
+    } else {
+      merged.push(line);
+    }
+
+    for (const ch of line) {
+      if (ch === "(") depth++;
+      else if (ch === ")") depth = Math.max(0, depth - 1);
+    }
+  }
+
+  return merged;
+}
+
 function parseSkills(text: string): string[] {
   if (!text) return [];
 
-  const lines = text
+  const rawLines = text
     .split("\n")
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
+  const lines = mergeWrappedParenLines(rawLines);
   const collected: string[] = [];
 
   for (const line of lines) {
@@ -290,7 +350,9 @@ function parseSkills(text: string): string[] {
 
     // "Category: item1, item2", colon may have zero or more spaces after it.
     const subCategoryMatch = /^([^:]{1,50}):\s*(.+)$/.exec(stripped);
-    const items = (subCategoryMatch ? subCategoryMatch[2].split(",") : stripped.split(/[,|•·]+/))
+    const topLevel = subCategoryMatch ? splitTopLevelCommas(subCategoryMatch[2]) : stripped.split(/[,|•·]+/);
+    const items = topLevel
+      .flatMap(expandLabeledGroup)
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter((s) => s.length > 1 && s.length <= 50);
     collected.push(...items);
@@ -357,10 +419,20 @@ function parseExperience(text: string): ParsedResumeExperience[] {
   };
 
   const ROLE_AT_COMPANY_RE = /^(.+?)\s+(?:at|@)\s+(.+)$/;
+  // "Role - Company" or "Role – Company": common when there's no "at"/"@" separator.
+  // Bounded to short, period-free lines so it doesn't swallow a wrapped bullet
+  // sentence that merely happens to contain a hyphen.
+  const ROLE_DASH_COMPANY_RE = /^([^-–—]{2,60}?)\s*[-–—]\s*([^-–—]{2,80})$/;
 
   for (const line of lines) {
     if (BULLET_LINE_RE.test(line)) {
       const bulletText = line.replace(BULLET_LINE_RE, "").trim();
+      if (bulletText) bullets.push(bulletText);
+      continue;
+    }
+
+    if (SUB_BULLET_RE.test(line)) {
+      const bulletText = line.replace(SUB_BULLET_RE, "").trim();
       if (bulletText) bullets.push(bulletText);
       continue;
     }
@@ -371,8 +443,10 @@ function parseExperience(text: string): ParsedResumeExperience[] {
     }
 
     // "Role at Company" always starts a new entry, regardless of what came before.
+    // Excludes lines ending in "." (a real header never does, but a wrapped
+    // bullet continuation that happens to contain " at " often does).
     const atMatch = ROLE_AT_COMPANY_RE.exec(line);
-    if (atMatch) {
+    if (atMatch && !line.endsWith(".")) {
       flush();
       role = atMatch[1].trim();
       company = atMatch[2].trim();
@@ -413,14 +487,27 @@ function parseExperience(text: string): ParsedResumeExperience[] {
       continue;
     }
 
+    // "Role - Company" always starts a new entry too, same as "Role at Company".
+    const dashMatch = ROLE_DASH_COMPANY_RE.exec(line);
+    if (dashMatch && line.split(/\s+/).length <= 12 && !line.endsWith(".")) {
+      flush();
+      role = dashMatch[1].trim();
+      company = dashMatch[2].trim();
+      hasEntry = true;
+      continue;
+    }
+
     if (!role) {
       role = line;
       hasEntry = true;
     } else if (!company) {
       company = line;
       hasEntry = true;
+    } else if (bullets.length > 0) {
+      // Wrapped continuation of the previous bullet (PDF line-wrap, no marker).
+      bullets[bullets.length - 1] = `${bullets[bullets.length - 1]} ${line}`.trim();
     }
-    // Extra descriptive line once role and company are both already set: ignore it.
+    // Extra descriptive line with nothing to attach to: ignore it.
   }
   flush();
 
