@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractFromText } from "@modules/candidates/resume-extractor";
+import { extractFromText, type SkillGroup } from "@modules/candidates/resume-extractor";
+
+function flatSkills(groups: SkillGroup[]): string[] {
+  return groups.flatMap((g) => g.items);
+}
 
 describe("extractFromText", () => {
   it("extracts name, email, and phone from a typical resume header", () => {
@@ -28,20 +32,23 @@ describe("extractFromText", () => {
     expect(result.phone).toContain("415-555-0132");
   });
 
-  it("extracts a bulleted skills list", () => {
+  it("extracts a bulleted skills list with no category as one ungrouped group", () => {
     const text = ["Jane Doe", "", "Skills", "• TypeScript", "• Node.js", "• PostgreSQL"].join("\n");
 
     const result = extractFromText(text);
 
-    expect(result.skills).toEqual(["TypeScript", "Node.js", "PostgreSQL"]);
+    expect(result.skills).toEqual([{ category: "", items: ["TypeScript", "Node.js", "PostgreSQL"] }]);
   });
 
-  it("extracts a comma-separated skills list under a category label", () => {
-    const text = ["Jane Doe", "", "Skills", "Languages: TypeScript, Python, Go"].join("\n");
+  it("keeps each skills category as its own group instead of flattening them together", () => {
+    const text = ["Jane Doe", "", "Skills", "Languages: TypeScript, Python, Go", "Databases: Postgres, Redis"].join("\n");
 
     const result = extractFromText(text);
 
-    expect(result.skills).toEqual(["TypeScript", "Python", "Go"]);
+    expect(result.skills).toEqual([
+      { category: "Languages", items: ["TypeScript", "Python", "Go"] },
+      { category: "Databases", items: ["Postgres", "Redis"] },
+    ]);
   });
 
   it("filters prose fragments and stray punctuation out of the skills list", () => {
@@ -57,7 +64,7 @@ describe("extractFromText", () => {
 
     const result = extractFromText(text);
 
-    expect(result.skills).toEqual(["TypeScript"]);
+    expect(flatSkills(result.skills)).toEqual(["TypeScript"]);
   });
 
   it("extracts a job entry with a role, company, date range, and bullets", () => {
@@ -114,12 +121,13 @@ describe("extractFromText", () => {
     ].join("\n");
 
     const result = extractFromText(text);
+    const skills = flatSkills(result.skills);
 
-    expect(result.skills).toEqual(
+    expect(skills).toEqual(
       expect.arrayContaining(["AWS", "EKS", "CloudFormation", "EC2", "Azure", "AKS", "Bot Services", "Docker"]),
     );
-    expect(result.skills).not.toContain("AWS(EKS");
-    expect(result.skills).not.toContain("Azure (AKS");
+    expect(skills).not.toContain("AWS(EKS");
+    expect(skills).not.toContain("Azure (AKS");
   });
 
   it("merges a parenthetical skills group that wraps across a PDF line break", () => {
@@ -133,7 +141,7 @@ describe("extractFromText", () => {
 
     const result = extractFromText(text);
 
-    expect(result.skills).toEqual(
+    expect(flatSkills(result.skills)).toEqual(
       expect.arrayContaining(["Azure", "AKS", "Bot Services", "Pipelines", "Multi Tenant", "Docker"]),
     );
   });
@@ -270,5 +278,74 @@ describe("extractFromText", () => {
 
     expect(result.skills).toEqual([]);
     expect(result.experience).toEqual([]);
+    expect(result.sections).toEqual([]);
+  });
+
+  it("captures education (a known section spelling) instead of discarding it", () => {
+    const text = [
+      "Jane Doe",
+      "",
+      "Experience",
+      "Backend Engineer at Acme Corp",
+      "Jan 2021 - Present",
+      "- Built the payments service",
+      "",
+      "Education",
+      "State University, BS Computer Science",
+      "2016 - 2020",
+    ].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.sections).toContainEqual({
+      heading: "Education",
+      items: ["State University, BS Computer Science", "2016 - 2020"],
+    });
+  });
+
+  it("captures a known-but-not-specially-parsed section like certificates", () => {
+    const text = [
+      "Jane Doe",
+      "",
+      "Certificates",
+      "• AWS Certified Solutions Architect",
+      "• MongoDB Search Badge",
+    ].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.sections).toContainEqual({
+      heading: "Certificates",
+      items: ["AWS Certified Solutions Architect", "MongoDB Search Badge"],
+    });
+  });
+
+  it("discovers an ALL CAPS section heading it has no name for, instead of dropping it", () => {
+    const text = ["Jane Doe", "", "PATENTS", "• Method for distributed cache invalidation, US1234567"].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.sections).toContainEqual({
+      heading: "Patents",
+      items: ["Method for distributed cache invalidation, US1234567"],
+    });
+  });
+
+  it("doesn't mistake a Title Case job header for a new section", () => {
+    // Only ALL CAPS lines are treated as novel headers; a short Title Case
+    // line inside Experience is far more likely to be a job title.
+    const text = [
+      "Jane Doe",
+      "",
+      "Experience",
+      "Backend Engineer - Acme Corp",
+      "Jan 2021 - Present",
+      "- Built the payments service",
+    ].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.sections).toEqual([]);
+    expect(result.experience).toHaveLength(1);
   });
 });

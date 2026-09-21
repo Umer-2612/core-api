@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { ParsedResumeExperience } from "@modules/candidates/resume-extractor";
+import type { ParsedResumeExperience, ResumeSection, SkillGroup } from "@modules/candidates/resume-extractor";
 import type { CandidateProfile } from "@shared/interfaces/models.interface";
 import { prisma } from "@/db/prisma";
 
@@ -7,8 +7,9 @@ export interface CreateCandidateProfileData {
   candidate_id: string;
   phone: string | null;
   summary: string | null;
-  skills: string[];
+  skills: SkillGroup[];
   experience: ParsedResumeExperience[];
+  sections: ResumeSection[];
 }
 
 export interface ICandidateProfileRepository {
@@ -16,12 +17,13 @@ export interface ICandidateProfileRepository {
   create(data: CreateCandidateProfileData): Promise<CandidateProfile>;
 }
 
-/** ParsedResumeExperience[] is plain data (strings and string arrays only), a valid JSON
- * value structurally, just not one TS can verify against Prisma's Json types without a
- * cast, since a named interface has no index signature. One shared helper instead of an
- * ad hoc cast at every call site that touches this field (repository, tests, anywhere else). */
-export function experienceToJson(experience: ParsedResumeExperience[]): Prisma.InputJsonValue {
-  return experience as unknown as Prisma.InputJsonValue;
+/** SkillGroup[]/ParsedResumeExperience[]/ResumeSection[] are plain data (strings and
+ * arrays only), a valid JSON value structurally, just not one TS can verify against
+ * Prisma's Json types without a cast, since a named interface has no index signature.
+ * One shared helper instead of an ad hoc cast at every call site that touches these
+ * fields (repository, tests, anywhere else). */
+export function toJsonValue<T>(value: T): Prisma.InputJsonValue {
+  return value as unknown as Prisma.InputJsonValue;
 }
 
 /** Data access for the `candidate_profiles` table (Prisma / Postgres). What the resume
@@ -32,6 +34,13 @@ export class CandidateProfileRepository implements ICandidateProfileRepository {
   }
 
   async create(data: CreateCandidateProfileData): Promise<CandidateProfile> {
-    return prisma.candidateProfile.create({ data: { ...data, experience: experienceToJson(data.experience) } });
+    return prisma.candidateProfile.create({
+      data: {
+        ...data,
+        skills: toJsonValue(data.skills),
+        experience: toJsonValue(data.experience),
+        sections: toJsonValue(data.sections),
+      },
+    });
   }
 }

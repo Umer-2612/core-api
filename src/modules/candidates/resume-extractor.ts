@@ -7,16 +7,38 @@ export interface ParsedResumeExperience {
   bullets: string[];
 }
 
+/** One category from a skills list, e.g. { category: "Databases", items: [...] }.
+ * `category` is "" when the resume lists skills with no category label at all. */
+export interface SkillGroup {
+  category: string;
+  items: string[];
+}
+
+/** Any resume section besides summary/skills/experience (which get dedicated
+ * parsing above): education, certificates, achievements, projects, languages,
+ * or anything else this specific resume happens to have. Nothing is dropped:
+ * a section this parser has never seen before still shows up here, keyed by
+ * whatever heading text the resume itself used. */
+export interface ResumeSection {
+  heading: string;
+  items: string[];
+}
+
 export interface ParsedResume {
   full_name: string;
   email: string | null;
   phone: string | null;
   summary: string | null;
-  skills: string[];
+  skills: SkillGroup[];
   experience: ParsedResumeExperience[];
+  sections: ResumeSection[];
 }
 
 // ─── Section dictionary ─────────────────────────────────────────────────────
+// Only summary/skills/experience get dedicated structured parsing below.
+// Everything else (education, certificates, achievements, projects, ...) is
+// captured generically into `sections`, so a header spelling this dictionary
+// doesn't recognize still comes through (see isGenericHeaderCandidate).
 
 const PARSED_SECTIONS: Record<string, string[]> = {
   summary: [
@@ -63,11 +85,18 @@ const PARSED_SECTIONS: Record<string, string[]> = {
     "positions",
     "position",
   ],
-  education: ["education", "academic background", "academic qualifications", "qualifications", "educational background"],
 };
 
-// Additional section headers used ONLY as stop-markers (not parsed).
-const STOP_ONLY: string[] = [
+// Known spellings for generic (non-specially-parsed) sections. Not exhaustive
+// by design, anything not listed here still gets picked up by the all-caps
+// fallback in isGenericHeaderCandidate, this list only exists so common
+// lowercase/mixed-case headers (e.g. "Education") are recognized reliably.
+const GENERIC_SECTION_TITLES: string[] = [
+  "education",
+  "academic background",
+  "academic qualifications",
+  "qualifications",
+  "educational background",
   "projects",
   "project",
   "personal projects",
@@ -104,7 +133,7 @@ const STOP_ONLY: string[] = [
   "additional skills",
 ];
 
-const ALL_TITLES = [...Object.values(PARSED_SECTIONS).flat(), ...STOP_ONLY];
+const ALL_TITLES = [...Object.values(PARSED_SECTIONS).flat(), ...GENERIC_SECTION_TITLES];
 
 // ─── Regexes ─────────────────────────────────────────────────────────────────
 
@@ -139,19 +168,18 @@ export function extractFromText(rawText: string): ParsedResume {
     .map((l) => l.replace(/\r|\t/g, "").trim())
     .filter((l) => l.length > 0);
 
-  const cleaned = `${lines.join("\n")}\n{end}`;
-
   const email = EMAIL_RE.exec(rawText)?.[0]?.toLowerCase() ?? null;
   const phone = extractPhone(rawText);
-  const sections = extractSections(cleaned);
+  const { special, generic } = buildSections(lines);
 
   return {
     full_name: extractName(lines),
     email,
     phone,
-    summary: sections.summary?.replace(/\n+/g, " ").trim().slice(0, 600) ?? null,
-    skills: parseSkills(sections.skills ?? ""),
-    experience: parseExperience(sections.experience ?? ""),
+    summary: special.summary?.replace(/\n+/g, " ").trim().slice(0, 600) ?? null,
+    skills: parseSkills(special.skills ?? ""),
+    experience: parseExperience(special.experience ?? ""),
+    sections: generic,
   };
 }
 
@@ -162,30 +190,113 @@ function extractPhone(rawText: string): string | null {
   return digits.length >= 10 ? match[0].trim() : null;
 }
 
-function extractSections(cleaned: string): Record<string, string> {
-  const sections: Record<string, string> = {};
+// ─── Section outline ────────────────────────────────────────────────────────
+// Walks the resume once, finds every line that looks like a section header
+// (either a known spelling from the dictionaries above, or a novel one this
+// parser has never seen), and slices the lines between consecutive headers.
+// This is what lets an unfamiliar resume's sections still come through in
+// `sections` instead of being silently dropped: nothing depends on the header
+// text being on a fixed list, only on it looking like a header.
 
+type SpecialKey = "summary" | "skills" | "experience";
+
+// A section header this parser has no name for: short, ALL CAPS (many resume
+// templates render headers this way), not contact-like. Title Case headers
+// aren't matched here on purpose, a short Title Case line is indistinguishable
+// from a "Role - Company" job line without knowing which section we're in.
+const GENERIC_HEADER_RE = /^[A-Z][A-Z0-9 &/'-]{1,38}$/;
+
+function isGenericHeaderCandidate(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed.split(/\s+/).length > 5) return false;
+  if (CONTACT_CONTEXT_RE.test(trimmed)) return false;
+  return GENERIC_HEADER_RE.test(trimmed);
+}
+
+function findSpecialKey(lower: string): SpecialKey | null {
   for (const [key, titles] of Object.entries(PARSED_SECTIONS)) {
-    for (const title of titles) {
-      if (sections[key]) break;
+    if (titles.includes(lower)) return key as SpecialKey;
+  }
+  return null;
+}
 
-      const otherTitles = ALL_TITLES.filter((t) => t.toLowerCase() !== title.toLowerCase())
-        .map(escapeRegex)
-        .join("|");
+interface DetectedHeader {
+  index: number;
+  raw: string;
+  specialKey: SpecialKey | null;
+}
 
-      const re = new RegExp(
-        `(?:^|\\n)${escapeRegex(title)}\\s*:?\\s*\\n([\\s\\S]*?)(?:\\n(?:${otherTitles})\\s*\\n|\\n\\{end\\})`,
-        "i",
-      );
+function detectHeaders(lines: string[]): DetectedHeader[] {
+  const genericTitleSet = new Set(GENERIC_SECTION_TITLES.map((t) => t.toLowerCase()));
+  const seen = new Set<string>();
+  const headers: DetectedHeader[] = [];
 
-      const match = re.exec(cleaned);
-      if (match?.[1]?.trim()) {
-        sections[key] = match[1].trim();
-      }
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lower = line.toLowerCase().trim();
+    const specialKey = findSpecialKey(lower);
+    const isKnown = specialKey !== null || genericTitleSet.has(lower);
+
+    if (isKnown) {
+      if (seen.has(lower)) continue; // only the first occurrence starts a new section
+      seen.add(lower);
+      headers.push({ index: i, raw: line, specialKey });
+      continue;
+    }
+
+    if (isGenericHeaderCandidate(line) && !seen.has(lower)) {
+      seen.add(lower);
+      headers.push({ index: i, raw: line, specialKey: null });
     }
   }
 
-  return sections;
+  return headers;
+}
+
+/** "PROJECTS" -> "Projects", "Work History" untouched (already readable). */
+function toDisplayHeading(raw: string): string {
+  const trimmed = raw.trim();
+  if (!/[a-z]/.test(trimmed)) {
+    return trimmed
+      .toLowerCase()
+      .split(/\s+/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  }
+  return trimmed;
+}
+
+/** Every non-empty line becomes its own item (bullet marker stripped if
+ * present). Deliberately doesn't try to merge wrapped lines here: unlike a
+ * job's bullet list, sections like Education mix free-form multi-line
+ * entries in too many different shapes to guess reliably without AI. */
+function parseGenericSectionItems(lines: string[]): string[] {
+  return lines
+    .map((line) => line.replace(BULLET_LINE_RE, "").replace(SUB_BULLET_RE, "").trim())
+    .filter((line) => line.length > 0);
+}
+
+function buildSections(lines: string[]): { special: Partial<Record<SpecialKey, string>>; generic: ResumeSection[] } {
+  const headers = detectHeaders(lines);
+  const special: Partial<Record<SpecialKey, string>> = {};
+  const generic: ResumeSection[] = [];
+
+  for (let h = 0; h < headers.length; h++) {
+    const start = headers[h].index + 1;
+    const end = h + 1 < headers.length ? headers[h + 1].index : lines.length;
+    const contentLines = lines.slice(start, end);
+    if (contentLines.length === 0) continue;
+
+    if (headers[h].specialKey) {
+      if (!special[headers[h].specialKey!]) special[headers[h].specialKey!] = contentLines.join("\n");
+      continue;
+    }
+
+    const items = parseGenericSectionItems(contentLines);
+    if (items.length > 0) generic.push({ heading: toDisplayHeading(headers[h].raw), items });
+  }
+
+  return { special, generic };
 }
 
 // ─── Name extraction ─────────────────────────────────────────────────────────
@@ -335,7 +446,41 @@ function mergeWrappedParenLines(lines: string[]): string[] {
   return merged;
 }
 
-function parseSkills(text: string): string[] {
+const SKILL_TITLE_SET = new Set(ALL_TITLES.map((t) => t.toLowerCase()));
+
+function cleanSkillItems(raw: string[]): string[] {
+  return [
+    ...new Set(
+      raw
+        .map((s) => s.replace(/\s+/g, " ").trim())
+        .filter((s) => s.length > 1 && s.length <= 50)
+        .filter((s) => {
+          if (SKILL_TITLE_SET.has(s.toLowerCase())) return false;
+          if (PAGE_NUMBER.test(s)) return false; // "1 / 3"
+          if (IS_URL.test(s)) return false;
+          if (/^[a-z]/.test(s)) return false; // sentence continuation (starts lowercase)
+          if (s.endsWith(".") || s.endsWith(",")) return false; // sentence fragment
+          if (TRAILING_FILLER.test(s)) return false; // "Continuous Integration and"
+          if (/\)$/.test(s) && !s.includes("(")) return false; // stray closing paren "SSM)"
+          if (s.includes("(") && !s.includes(")")) return false; // stray opening paren "AWS (Lambda"
+
+          // Any multi-word item where half or more words start lowercase is a prose fragment.
+          const words = s.split(/\s+/);
+          if (words.length >= 2) {
+            const lowercaseCount = words.filter((w) => /^[a-z]/.test(w)).length;
+            if (lowercaseCount / words.length >= 0.5) return false;
+          }
+          return true;
+        }),
+    ),
+  ].slice(0, 40);
+}
+
+/** Preserves the resume's own category structure ("Languages: TypeScript,
+ * Python" / "Databases: Postgres, Redis" become two separate groups) instead
+ * of flattening every category into one undifferentiated list. Lines with no
+ * "Category:" label are collected into a single group with category: "". */
+function parseSkills(text: string): SkillGroup[] {
   if (!text) return [];
 
   const rawLines = text
@@ -343,46 +488,27 @@ function parseSkills(text: string): string[] {
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
   const lines = mergeWrappedParenLines(rawLines);
-  const collected: string[] = [];
+
+  const groups: SkillGroup[] = [];
+  const ungrouped: string[] = [];
 
   for (const line of lines) {
     const stripped = line.replace(BULLET_LINE_RE, "");
 
     // "Category: item1, item2", colon may have zero or more spaces after it.
     const subCategoryMatch = /^([^:]{1,50}):\s*(.+)$/.exec(stripped);
-    const topLevel = subCategoryMatch ? splitTopLevelCommas(subCategoryMatch[2]) : stripped.split(/[,|•·]+/);
-    const items = topLevel
-      .flatMap(expandLabeledGroup)
-      .map((s) => s.replace(/\s+/g, " ").trim())
-      .filter((s) => s.length > 1 && s.length <= 50);
-    collected.push(...items);
+    if (subCategoryMatch) {
+      const items = cleanSkillItems(splitTopLevelCommas(subCategoryMatch[2]).flatMap(expandLabeledGroup));
+      if (items.length > 0) groups.push({ category: subCategoryMatch[1].trim(), items });
+    } else {
+      ungrouped.push(...stripped.split(/[,|•·]+/).flatMap(expandLabeledGroup));
+    }
   }
 
-  const titleSet = new Set(ALL_TITLES.map((t) => t.toLowerCase()));
+  const ungroupedItems = cleanSkillItems(ungrouped);
+  if (ungroupedItems.length > 0) groups.push({ category: "", items: ungroupedItems });
 
-  return [
-    ...new Set(
-      collected.filter((s) => {
-        if (titleSet.has(s.toLowerCase())) return false;
-        if (s.length < 2 || s.length > 50) return false;
-        if (PAGE_NUMBER.test(s)) return false; // "1 / 3"
-        if (IS_URL.test(s)) return false;
-        if (/^[a-z]/.test(s)) return false; // sentence continuation (starts lowercase)
-        if (s.endsWith(".") || s.endsWith(",")) return false; // sentence fragment
-        if (TRAILING_FILLER.test(s)) return false; // "Continuous Integration and"
-        if (/\)$/.test(s) && !s.includes("(")) return false; // stray closing paren "SSM)"
-        if (s.includes("(") && !s.includes(")")) return false; // stray opening paren "AWS (Lambda"
-
-        // Any multi-word item where half or more words start lowercase is a prose fragment.
-        const words = s.split(/\s+/);
-        if (words.length >= 2) {
-          const lowercaseCount = words.filter((w) => /^[a-z]/.test(w)).length;
-          if (lowercaseCount / words.length >= 0.5) return false;
-        }
-        return true;
-      }),
-    ),
-  ].slice(0, 40);
+  return groups;
 }
 
 // ─── Experience parser ───────────────────────────────────────────────────────
@@ -512,10 +638,4 @@ function parseExperience(text: string): ParsedResumeExperience[] {
   flush();
 
   return jobs.slice(0, 15);
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

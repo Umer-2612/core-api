@@ -3,6 +3,7 @@ import { CandidatesService } from "@modules/candidates/candidates.service";
 import type { ScheduleInterviewDto } from "@modules/interview-sessions/interview-sessions.dto";
 import type { IInterviewSessionsRepository } from "@modules/interview-sessions/interview-sessions.repository";
 import { InterviewSessionsRepository } from "@modules/interview-sessions/interview-sessions.repository";
+import { HttpException } from "@shared/exceptions/http.exception";
 import type { InterviewSessionWithRounds, PublicUser } from "@shared/interfaces/models.interface";
 
 export class InterviewSessionsService {
@@ -15,8 +16,9 @@ export class InterviewSessionsService {
   }
 
   /** hiring_manager only (enforced at the route), the candidate must belong to this job,
-   * which must belong to their own company. Creates the session and its three rounds
-   * (dsa, vscode, technical_ai) together, atomically. */
+   * which must belong to their own company. A candidate can only be scheduled once, so
+   * this 409s if a session already exists rather than creating a second one. Creates the
+   * session and its three rounds (dsa, vscode, technical_ai) together, atomically. */
   public async schedule(
     jobId: string,
     candidateId: string,
@@ -24,6 +26,9 @@ export class InterviewSessionsService {
     scheduler: PublicUser,
   ): Promise<InterviewSessionWithRounds> {
     await this.candidatesService.getCandidateInJobOrThrow(jobId, candidateId, scheduler);
+
+    const existing = await this.interviewSessionsRepository.findByCandidate(candidateId);
+    if (existing.length > 0) throw new HttpException(409, "This candidate already has an interview scheduled");
 
     return this.interviewSessionsRepository.create({
       job_id: jobId,

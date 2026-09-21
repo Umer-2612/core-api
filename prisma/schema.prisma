@@ -110,7 +110,7 @@ model Candidate {
 model InterviewSession {
   id           String                 @id @default(uuid())
   job_id       String
-  candidate_id String
+  candidate_id String                 @unique
   scheduled_at DateTime
   status       InterviewSessionStatus @default(scheduled)
   created_by   String
@@ -122,7 +122,6 @@ model InterviewSession {
   rounds    InterviewRound[]
 
   @@index([job_id])
-  @@index([candidate_id])
   @@map("interview_sessions")
 }
 
@@ -147,8 +146,9 @@ model CandidateProfile {
   candidate_id String   @unique
   phone        String?
   summary      String?
-  skills       String[]
+  skills       Json
   experience   Json
+  sections     Json
   created_at   DateTime @default(now())
 
   candidate Candidate @relation(fields: [candidate_id], references: [id], onDelete: Cascade)

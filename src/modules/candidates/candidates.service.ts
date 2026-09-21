@@ -25,6 +25,7 @@ const EMPTY_PARSED_RESUME: ParsedResume = {
   summary: null,
   skills: [],
   experience: [],
+  sections: [],
 };
 
 /** Turns "jane-doe_resume.pdf" into "Jane Doe Resume", the fallback for when the PDF
@@ -88,6 +89,7 @@ export class CandidatesService {
         summary: parsed.summary,
         skills: parsed.skills,
         experience: parsed.experience,
+        sections: parsed.sections,
       });
 
       candidates.push(toPublicCandidate(candidate));
