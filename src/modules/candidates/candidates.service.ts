@@ -25,6 +25,7 @@ const EMPTY_PARSED_RESUME: ParsedResume = {
   summary: null,
   skills: [],
   experience: [],
+  education: [],
   sections: [],
   links: [],
 };
@@ -90,6 +91,7 @@ export class CandidatesService {
         summary: parsed.summary,
         skills: parsed.skills,
         experience: parsed.experience,
+        education: parsed.education,
         sections: parsed.sections,
         links: parsed.links,
       });

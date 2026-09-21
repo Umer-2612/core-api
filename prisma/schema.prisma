@@ -148,6 +148,7 @@ model CandidateProfile {
   summary      String?
   skills       Json
   experience   Json
+  education    Json
   sections     Json
   links        Json
   created_at   DateTime @default(now())

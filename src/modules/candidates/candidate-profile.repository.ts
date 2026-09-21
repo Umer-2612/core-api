@@ -9,6 +9,7 @@ export interface CreateCandidateProfileData {
   summary: string | null;
   skills: SkillGroup[];
   experience: ParsedResumeExperience[];
+  education: ParsedResumeExperience[];
   sections: ResumeSection[];
   links: ExtractedLink[];
 }
@@ -40,6 +41,7 @@ export class CandidateProfileRepository implements ICandidateProfileRepository {
         ...data,
         skills: toJsonValue(data.skills),
         experience: toJsonValue(data.experience),
+        education: toJsonValue(data.education),
         sections: toJsonValue(data.sections),
         links: toJsonValue(data.links),
       },
