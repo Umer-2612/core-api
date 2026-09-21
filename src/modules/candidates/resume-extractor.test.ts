@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractFromText, type SkillGroup } from "@modules/candidates/resume-extractor";
+import { extractFromText, labelForUrl, type SkillGroup } from "@modules/candidates/resume-extractor";
 
 function flatSkills(groups: SkillGroup[]): string[] {
   return groups.flatMap((g) => g.items);
@@ -279,6 +279,15 @@ describe("extractFromText", () => {
     expect(result.skills).toEqual([]);
     expect(result.experience).toEqual([]);
     expect(result.sections).toEqual([]);
+    expect(result.links).toEqual([]);
+  });
+
+  it("labels a known domain (LinkedIn, GitHub, ...) and falls back to the hostname", () => {
+    expect(labelForUrl("https://www.linkedin.com/in/jane")).toBe("LinkedIn");
+    expect(labelForUrl("https://github.com/jane")).toBe("GitHub");
+    expect(labelForUrl("mailto:jane@example.com")).toBe("Email");
+    expect(labelForUrl("https://www.janedoe.dev/")).toBe("janedoe.dev");
+    expect(labelForUrl("not a url")).toBe("Link");
   });
 
   it("captures education (a known section spelling) instead of discarding it", () => {

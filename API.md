@@ -212,7 +212,12 @@ no category labels gets one group with `category: ""`. `sections` is every OTHER
 resume had (education, certificates, achievements, projects, ...) that isn't specifically
 parsed above, captured under whatever heading the resume itself used so nothing is dropped,
 even a section this parser has never seen before (see `resume-extractor.ts`'s section outline
-scan for how an unrecognized heading still gets picked up).
+scan for how an unrecognized heading still gets picked up). `links` is every hyperlink found
+anywhere in the PDF (LinkedIn/GitHub/portfolio in the header, a project's repo link, a
+certificate's badge link, ...), deduplicated by URL, each auto-labeled by domain when it's a
+recognized one (LinkedIn, GitHub, GitLab, mailto, Credly) or by hostname otherwise. These are
+PDF link annotations, not text on the page, "LinkedIn" as visible text has no URL in it, so
+this can only come from reading the PDF directly, not from `extractFromText`.
 ```json
 {
   "id": "uuid",
@@ -222,6 +227,7 @@ scan for how an unrecognized heading still gets picked up).
   "skills": [{ "category": "string (may be \"\")", "items": "string[]" }],
   "experience": [{ "role": "string", "company": "string", "years": "string", "bullets": "string[]" }],
   "sections": [{ "heading": "string", "items": "string[]" }],
+  "links": [{ "label": "string", "url": "string" }],
   "created_at": "date"
 }
 ```
@@ -254,6 +260,6 @@ InterviewSession (1) ----< (exactly 3) InterviewRound
 - **User**: `id, company_id (FK), full_name, email (unique), password_hash, role, status, invited_by (FK to another user, nullable), created_at`. A login account, always belongs to exactly one company. `status` is `active` unless there's a reason for it not to be, `pending_verification` is reserved for a future verification step and unused today.
 - **Job**: `id, company_id (FK), title, description, created_by (FK), created_at`. Only a hiring manager creates these.
 - **Candidate**: `id, job_id (FK), full_name, email (nullable), resume_file_name, resume_key, created_by (FK), created_at`. One row per uploaded resume. `resume_key` is the S3 object key, the file itself never touches Postgres. `full_name`/`email` come from the resume parser when it finds them, otherwise `full_name` falls back to the file name and `email` stays null.
-- **CandidateProfile**: `id, candidate_id (FK, unique), phone (nullable), summary (nullable), skills (JSON array of `{ category, items }`), experience (JSON array of `{ role, company, years, bullets }`), sections (JSON array of `{ heading, items }`, everything else the resume had), created_at`. What the resume parser found beyond name and email, one row per candidate, created (possibly empty) at upload time regardless of whether the parse fully succeeded.
+- **CandidateProfile**: `id, candidate_id (FK, unique), phone (nullable), summary (nullable), skills (JSON array of `{ category, items }`), experience (JSON array of `{ role, company, years, bullets }`), sections (JSON array of `{ heading, items }`, everything else the resume had), links (JSON array of `{ label, url }`, every PDF hyperlink found), created_at`. What the resume parser found beyond name and email, one row per candidate, created (possibly empty) at upload time regardless of whether the parse fully succeeded.
 - **InterviewSession**: `id, job_id (FK), candidate_id (FK, unique), scheduled_at, status, created_by (FK), created_at`. At most one row per candidate, scheduling a second one 409s.
 - **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai), sequence, status, created_at`. Always exactly three per session, created alongside it. No round has anything beyond `status: pending` yet, running the actual rounds isn't implemented in this service.

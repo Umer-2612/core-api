@@ -113,6 +113,7 @@ function makeProfile(overrides: Partial<CandidateProfile> = {}): CandidateProfil
     skills: [],
     experience: [],
     sections: [],
+    links: [],
     created_at: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
   };
@@ -130,6 +131,7 @@ class FakeCandidateProfileRepository implements ICandidateProfileRepository {
       skills: toJsonValue(data.skills) as CandidateProfile["skills"],
       experience: toJsonValue(data.experience) as CandidateProfile["experience"],
       sections: toJsonValue(data.sections) as CandidateProfile["sections"],
+      links: toJsonValue(data.links) as CandidateProfile["links"],
     });
     this.profiles.push(profile);
     return profile;

@@ -24,6 +24,17 @@ export interface ResumeSection {
   items: string[];
 }
 
+/** A hyperlink found anywhere in the PDF (LinkedIn/GitHub/portfolio in the
+ * header, a project's repo link, a certificate's badge link, ...). These are
+ * link annotations, not visible text, "LinkedIn" on the page has no URL in
+ * it, the URL only exists as the click target, so this can only be found by
+ * reading the PDF's annotations directly (see extractResumeFromPdf), not by
+ * scanning extracted text. `extractFromText` alone always returns none. */
+export interface ExtractedLink {
+  label: string;
+  url: string;
+}
+
 export interface ParsedResume {
   full_name: string;
   email: string | null;
@@ -32,6 +43,7 @@ export interface ParsedResume {
   skills: SkillGroup[];
   experience: ParsedResumeExperience[];
   sections: ResumeSection[];
+  links: ExtractedLink[];
 }
 
 // ─── Section dictionary ─────────────────────────────────────────────────────
@@ -158,8 +170,8 @@ const CONTACT_CONTEXT_RE = /[@+]|\d{7,}/;
 // ─── Main entry ──────────────────────────────────────────────────────────────
 
 export async function extractResumeFromPdf(buffer: Buffer): Promise<ParsedResume> {
-  const { text } = await pdfParse(buffer);
-  return extractFromText(text);
+  const { text, links } = await extractTextAndLinks(buffer);
+  return { ...extractFromText(text), links };
 }
 
 export function extractFromText(rawText: string): ParsedResume {
@@ -180,7 +192,73 @@ export function extractFromText(rawText: string): ParsedResume {
     skills: parseSkills(special.skills ?? ""),
     experience: parseExperience(special.experience ?? ""),
     sections: generic,
+    links: [],
   };
+}
+
+// ─── Link extraction ────────────────────────────────────────────────────────
+// A resume's "LinkedIn | Github | Portfolio" header (and a project's repo
+// link, a certificate's badge link, ...) is a PDF link annotation: the visible
+// text has no URL in it, the URL only exists as the click target. Reading it
+// means hooking pdf-parse's page-render callback to also read each page's
+// annotations, alongside the text extraction it already does per page.
+
+const KNOWN_LINK_LABELS: Array<{ pattern: RegExp; label: string }> = [
+  { pattern: /linkedin\.com/i, label: "LinkedIn" },
+  { pattern: /github\.com/i, label: "GitHub" },
+  { pattern: /gitlab\.com/i, label: "GitLab" },
+  { pattern: /^mailto:/i, label: "Email" },
+  { pattern: /credly\.com/i, label: "Credly" },
+];
+
+export function labelForUrl(url: string): string {
+  for (const { pattern, label } of KNOWN_LINK_LABELS) {
+    if (pattern.test(url)) return label;
+  }
+  try {
+    return new URL(url).hostname.replace(/^www\./, "") || "Link";
+  } catch {
+    return "Link";
+  }
+}
+
+/** Mirrors pdf-parse's default page-render text join exactly (same
+ * newline-on-Y-change logic) so hooking it for annotations doesn't change
+ * what extractFromText sees. */
+function joinTextItems(items: Array<{ str: string; transform: number[] }>): string {
+  let lastY: number | undefined;
+  let text = "";
+  for (const item of items) {
+    text += lastY === item.transform[5] || lastY === undefined ? item.str : `\n${item.str}`;
+    lastY = item.transform[5];
+  }
+  return text;
+}
+
+async function extractTextAndLinks(buffer: Buffer): Promise<{ text: string; links: ExtractedLink[] }> {
+  const seen = new Set<string>();
+  const links: ExtractedLink[] = [];
+
+  // pageData is pdf.js's Page object; @types/pdf-parse types it as `any` since
+  // pdf-parse doesn't depend on pdfjs-dist's own types.
+  const pagerender = async (pageData: any): Promise<string> => {
+    const [textContent, annotations] = await Promise.all([
+      pageData.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false }),
+      pageData.getAnnotations().catch(() => []),
+    ]);
+
+    for (const annotation of annotations) {
+      const url = typeof annotation?.url === "string" ? annotation.url.trim() : "";
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      links.push({ label: labelForUrl(url), url });
+    }
+
+    return joinTextItems(textContent.items);
+  };
+
+  const { text } = await pdfParse(buffer, { pagerender });
+  return { text, links };
 }
 
 function extractPhone(rawText: string): string | null {

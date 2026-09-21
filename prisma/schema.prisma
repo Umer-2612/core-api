@@ -149,6 +149,7 @@ model CandidateProfile {
   skills       Json
   experience   Json
   sections     Json
+  links        Json
   created_at   DateTime @default(now())
 
   candidate Candidate @relation(fields: [candidate_id], references: [id], onDelete: Cascade)

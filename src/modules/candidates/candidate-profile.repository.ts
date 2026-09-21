@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { ParsedResumeExperience, ResumeSection, SkillGroup } from "@modules/candidates/resume-extractor";
+import type { ExtractedLink, ParsedResumeExperience, ResumeSection, SkillGroup } from "@modules/candidates/resume-extractor";
 import type { CandidateProfile } from "@shared/interfaces/models.interface";
 import { prisma } from "@/db/prisma";
 
@@ -10,6 +10,7 @@ export interface CreateCandidateProfileData {
   skills: SkillGroup[];
   experience: ParsedResumeExperience[];
   sections: ResumeSection[];
+  links: ExtractedLink[];
 }
 
 export interface ICandidateProfileRepository {
@@ -40,6 +41,7 @@ export class CandidateProfileRepository implements ICandidateProfileRepository {
         skills: toJsonValue(data.skills),
         experience: toJsonValue(data.experience),
         sections: toJsonValue(data.sections),
+        links: toJsonValue(data.links),
       },
     });
   }
