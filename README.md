@@ -11,8 +11,13 @@ Backend service for the Interview Platform. Handles authentication and organizat
 - Jobs: a hiring manager creates a job (title and description) in their own company.
 - Candidates: a hiring manager bulk-uploads PDF resumes to a job, each PDF becomes one
   candidate. The resume itself is stored in S3, only its key lives in Postgres. Each PDF is
-  also parsed (regex/heuristics, no AI) for a name, email, phone, summary, skills, and work
-  experience, the parsed result lives in a separate `CandidateProfile` row.
+  also parsed (regex/heuristics, no AI, see `resume-extractor.ts`) for a name, email, phone,
+  summary, skills (grouped by the resume's own category labels), work experience, education
+  (parsed the same structured way as experience), every other resume section the parser
+  doesn't specifically recognize (captured under whatever heading the resume used, so nothing
+  is dropped), and every PDF hyperlink (LinkedIn/GitHub/portfolio, project repo links,
+  certificate badges), labeled with the exact resume text each link is attached to. The parsed
+  result lives in a separate `CandidateProfile` row.
 - Interviews: a hiring manager schedules an interview for a candidate. Scheduling creates
   three rounds (`dsa`, `vscode`, `technical_ai`) alongside it; running those rounds isn't
   implemented in this service yet, only scheduling them is.
