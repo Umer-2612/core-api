@@ -178,12 +178,15 @@ Auth required, role: `hiring_manager` only, and the job must belong to their own
 Creates the session and its three rounds (`dsa`, `vscode`, `technical_ai`, in that order)
 together, atomically. Only scheduling exists so far, the rounds themselves (the actual DSA
 editor, VSCode sandbox, and AI technical interview) aren't implemented yet, each round is
-created with `status: pending` and nothing else.
+created with `status: pending` and nothing else. A candidate can only be scheduled once,
+`candidate_id` is unique on `interview_sessions`, a second attempt 409s.
 ```json
 // request
 { "scheduled_at": "string (ISO 8601 datetime)" }
 // response 201
 { "data": InterviewSessionWithRounds, "message": "interview scheduled" }
+// response 409 (candidate already has an interview scheduled)
+{ "success": false, "error": { "code": 409, "message": "This candidate already has an interview scheduled" } }
 ```
 
 ## Shapes
@@ -203,9 +206,40 @@ created with `status: pending` and nothing else.
 { "id": "uuid", "job_id": "uuid", "full_name": "string", "email": "string | null", "resume_file_name": "string", "created_at": "date" }
 ```
 
-**CandidateProfile**:
+**CandidateProfile**: `skills` preserves each category from the resume (e.g. "Languages",
+"Databases") as its own group instead of flattening everything into one list; a resume with
+no category labels gets one group with `category: ""`. `experience` and `education` share the
+same shape (a resume's degree/institution/date line is structured the same way as a job's
+role/company/date line), `education` is only populated from a recognized education heading,
+so a resume with an unusual one still falls back to `sections` for it. `sections` is every
+OTHER section the resume had (certificates, achievements, projects, languages, ...) that
+isn't specifically parsed above, captured under whatever heading the resume itself used so
+nothing is dropped, even a section this parser has never seen before (see
+`resume-extractor.ts`'s section outline scan for how an unrecognized heading still gets
+picked up). Each section's `entries` groups a top-level bullet (e.g. a project name) with the
+sub-bullets under it (e.g. that project's own description lines) as one `{ title, bullets }`
+pair, so the frontend can number entries independently of how many sub-bullets each one has,
+instead of one flat, continuously-numbered list. `links` is every hyperlink found anywhere in
+the PDF (LinkedIn/GitHub/portfolio in the header, a project's repo link, a certificate's badge
+link, ...), deduplicated by URL. `label` is the exact resume text the link is attached to
+(found by matching the link annotation's position on the page to the text sitting at that
+position), falling back to a domain-based guess (LinkedIn, GitHub, GitLab, mailto, Credly, or
+the hostname) only when no text lines up with the link's position at all. These are PDF link
+annotations, not text on the page, "LinkedIn" as visible text has no URL in it, so this can
+only come from reading the PDF directly, not from `extractFromText`.
 ```json
-{ "id": "uuid", "candidate_id": "uuid", "phone": "string | null", "summary": "string | null", "skills": "string[]", "experience": [{ "role": "string", "company": "string", "years": "string", "bullets": "string[]" }], "created_at": "date" }
+{
+  "id": "uuid",
+  "candidate_id": "uuid",
+  "phone": "string | null",
+  "summary": "string | null",
+  "skills": [{ "category": "string (may be \"\")", "items": "string[]" }],
+  "experience": [{ "role": "string", "company": "string", "years": "string", "bullets": "string[]" }],
+  "education": [{ "role": "string", "company": "string", "years": "string", "bullets": "string[]" }],
+  "sections": [{ "heading": "string", "entries": [{ "title": "string", "bullets": "string[]" }] }],
+  "links": [{ "label": "string", "url": "string" }],
+  "created_at": "date"
+}
 ```
 
 **InterviewSessionWithRounds**:
@@ -227,7 +261,7 @@ Job       (1) ----< (many) Candidate
 User      (1) ----< (many) Candidate                (created_by)
 Candidate (1) ----( 0 or 1 ) CandidateProfile
 Job       (1) ----< (many) InterviewSession
-Candidate (1) ----< (many) InterviewSession
+Candidate (1) ----( 0 or 1 ) InterviewSession        (a candidate can only be scheduled once)
 User      (1) ----< (many) InterviewSession          (created_by)
 InterviewSession (1) ----< (exactly 3) InterviewRound
 ```
@@ -236,6 +270,6 @@ InterviewSession (1) ----< (exactly 3) InterviewRound
 - **User**: `id, company_id (FK), full_name, email (unique), password_hash, role, status, invited_by (FK to another user, nullable), created_at`. A login account, always belongs to exactly one company. `status` is `active` unless there's a reason for it not to be, `pending_verification` is reserved for a future verification step and unused today.
 - **Job**: `id, company_id (FK), title, description, created_by (FK), created_at`. Only a hiring manager creates these.
 - **Candidate**: `id, job_id (FK), full_name, email (nullable), resume_file_name, resume_key, created_by (FK), created_at`. One row per uploaded resume. `resume_key` is the S3 object key, the file itself never touches Postgres. `full_name`/`email` come from the resume parser when it finds them, otherwise `full_name` falls back to the file name and `email` stays null.
-- **CandidateProfile**: `id, candidate_id (FK, unique), phone (nullable), summary (nullable), skills (string array), experience (JSON array of `{ role, company, years, bullets }`), created_at`. What the resume parser found beyond name and email, one row per candidate, created (possibly empty) at upload time regardless of whether the parse fully succeeded.
-- **InterviewSession**: `id, job_id (FK), candidate_id (FK), scheduled_at, status, created_by (FK), created_at`. One row per scheduled interview. A candidate can have more than one, past or future.
+- **CandidateProfile**: `id, candidate_id (FK, unique), phone (nullable), summary (nullable), skills (JSON array of `{ category, items }`), experience (JSON array of `{ role, company, years, bullets }`), education (same shape as experience), sections (JSON array of `{ heading, entries: { title, bullets }[] }`, everything else the resume had), links (JSON array of `{ label, url }`, every PDF hyperlink found), created_at`. What the resume parser found beyond name and email, one row per candidate, created (possibly empty) at upload time regardless of whether the parse fully succeeded.
+- **InterviewSession**: `id, job_id (FK), candidate_id (FK, unique), scheduled_at, status, created_by (FK), created_at`. At most one row per candidate, scheduling a second one 409s.
 - **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai), sequence, status, created_at`. Always exactly three per session, created alongside it. No round has anything beyond `status: pending` yet, running the actual rounds isn't implemented in this service.

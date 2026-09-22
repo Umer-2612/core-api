@@ -201,6 +201,14 @@ describe("InterviewSessionsService", () => {
         service.schedule("job-1", "candidate-2", { scheduled_at: "2026-02-01T10:00:00Z" }, makeUser()),
       ).rejects.toMatchObject({ status: 404 });
     });
+
+    it("409s scheduling a second interview for a candidate that already has one", async () => {
+      sessionsRepo.sessions.push(makeSession());
+
+      await expect(
+        service.schedule("job-1", "candidate-1", { scheduled_at: "2026-03-01T10:00:00Z" }, makeUser()),
+      ).rejects.toMatchObject({ status: 409 });
+    });
   });
 
   describe("listByCandidate", () => {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  experienceToJson,
+  toJsonValue,
   type CreateCandidateProfileData,
   type ICandidateProfileRepository,
 } from "@modules/candidates/candidate-profile.repository";
@@ -112,6 +112,9 @@ function makeProfile(overrides: Partial<CandidateProfile> = {}): CandidateProfil
     summary: null,
     skills: [],
     experience: [],
+    education: [],
+    sections: [],
+    links: [],
     created_at: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
   };
@@ -126,7 +129,11 @@ class FakeCandidateProfileRepository implements ICandidateProfileRepository {
     const profile = makeProfile({
       id: `profile-${this.profiles.length + 1}`,
       ...data,
-      experience: experienceToJson(data.experience) as CandidateProfile["experience"],
+      skills: toJsonValue(data.skills) as CandidateProfile["skills"],
+      experience: toJsonValue(data.experience) as CandidateProfile["experience"],
+      education: toJsonValue(data.education) as CandidateProfile["education"],
+      sections: toJsonValue(data.sections) as CandidateProfile["sections"],
+      links: toJsonValue(data.links) as CandidateProfile["links"],
     });
     this.profiles.push(profile);
     return profile;
@@ -233,12 +240,14 @@ describe("CandidatesService", () => {
   describe("getProfileOrThrow", () => {
     it("returns the candidate's extracted profile", async () => {
       candidatesRepo.candidates.push(makeCandidate());
-      profilesRepo.profiles.push(makeProfile({ phone: "555-0132", skills: ["TypeScript"] }));
+      profilesRepo.profiles.push(
+        makeProfile({ phone: "555-0132", skills: [{ category: "", items: ["TypeScript"] }] }),
+      );
 
       const profile = await service.getProfileOrThrow("job-1", "candidate-1", makeUser());
 
       expect(profile.phone).toBe("555-0132");
-      expect(profile.skills).toEqual(["TypeScript"]);
+      expect(profile.skills).toEqual([{ category: "", items: ["TypeScript"] }]);
     });
 
     it("404s when the candidate has no profile row", async () => {
