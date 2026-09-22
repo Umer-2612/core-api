@@ -756,14 +756,18 @@ function parseExperience(text: string): ParsedResumeExperience[] {
   };
 
   const ROLE_AT_COMPANY_RE = /^(.+?)\s+(?:at|@)\s+(.+)$/;
-  // "Role - Company" or "Role – Company": common when there's no "at"/"@" separator.
-  // Bounded to short, period-free lines so it doesn't swallow a wrapped bullet
-  // sentence that merely happens to contain a hyphen. Requires actual spaces
-  // around the dash (not just \s*): otherwise a bullet mentioning a
-  // hyphenated compound word ("multi-tenant", "well-known", ...) matches too,
-  // since a bare hyphen has none of the whitespace a real "Role - Company"
-  // separator always does.
-  const ROLE_DASH_COMPANY_RE = /^([^-–—]{2,60}?)\s+[-–—]\s+([^-–—]{2,80})$/;
+  // "Role - Company", "Role – Company", or even "Role- Company" (space on
+  // only one side, some resumes are inconsistent about it): common when
+  // there's no "at"/"@" separator. Bounded to short, period-free lines so it
+  // doesn't swallow a wrapped bullet sentence that merely happens to contain
+  // a hyphen. HAS_SPACED_DASH_RE below is checked alongside this on every
+  // use: a hyphenated compound word ("multi-tenant") has no whitespace next
+  // to its dash on *either* side, a real "Role - Company" / "Role- Company"
+  // separator always has it on at least one, that's what distinguishes them,
+  // requiring it on *both* sides (as this regex used to) rejects the
+  // one-sided case real resumes also use.
+  const ROLE_DASH_COMPANY_RE = /^([^-–—]{2,60}?)\s*[-–—]\s*([^-–—]{2,80})$/;
+  const HAS_SPACED_DASH_RE = /\s[-–—]|[-–—]\s/;
   // "Role, Company" (or "Degree, Institution"): the other very common header
   // separator besides "at"/"-". Only a single comma is unambiguous, "A, B, C"
   // could be a role plus a two-part location or company name, not a role and
@@ -783,7 +787,7 @@ function parseExperience(text: string): ParsedResumeExperience[] {
     if (DATE_AT_END_RE.test(line)) return true;
     if (DATE_RANGE_RE.test(line) && line.split(/\s+/).length <= 8) return true;
     const dashMatch = ROLE_DASH_COMPANY_RE.exec(line);
-    if (dashMatch && line.split(/\s+/).length <= 12 && !line.endsWith(".")) return true;
+    if (dashMatch && HAS_SPACED_DASH_RE.test(line) && line.split(/\s+/).length <= 12 && !line.endsWith(".")) return true;
     const commaMatch = TITLE_COMMA_SUBTITLE_RE.exec(line);
     if (commaMatch && line.split(/\s+/).length <= 16 && !line.endsWith(".")) return true;
     return false;
@@ -878,7 +882,7 @@ function parseExperience(text: string): ParsedResumeExperience[] {
 
     // "Role - Company" always starts a new entry too, same as "Role at Company".
     const dashMatch = ROLE_DASH_COMPANY_RE.exec(line);
-    if (dashMatch && line.split(/\s+/).length <= 12 && !line.endsWith(".")) {
+    if (dashMatch && HAS_SPACED_DASH_RE.test(line) && line.split(/\s+/).length <= 12 && !line.endsWith(".")) {
       flush();
       role = dashMatch[1].trim();
       company = dashMatch[2].trim();

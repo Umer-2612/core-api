@@ -505,6 +505,31 @@ describe("extractFromText", () => {
     expect(result.experience[0]?.bullets).toEqual(["Built and deployed a multi-tenant service used across many teams"]);
   });
 
+  it("splits a dash job header with a space on only one side of the dash", () => {
+    // Some resumes are inconsistent about spacing: "Intern- Company" (no
+    // space before the dash) rather than "Intern - Company". Must still
+    // split, not get swallowed as a bullet of whatever entry came before it.
+    const text = [
+      "Jane Doe",
+      "",
+      "Experience",
+      "●",
+      "Software Engineer Intern- WebOsmotic Private Limited",
+      "Oct 2023 - Mar 2024",
+      "o Built core backend for an internal platform",
+    ].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.experience).toHaveLength(1);
+    expect(result.experience[0]).toMatchObject({
+      role: "Software Engineer Intern",
+      company: "WebOsmotic Private Limited",
+      years: "Oct 2023 - Mar 2024",
+    });
+    expect(result.experience[0]?.bullets).toEqual(["Built core backend for an internal platform"]);
+  });
+
   it("captures a known-but-not-specially-parsed section like certificates", () => {
     const text = [
       "Jane Doe",
