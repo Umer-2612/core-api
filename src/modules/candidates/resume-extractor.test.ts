@@ -465,6 +465,46 @@ describe("extractFromText", () => {
     expect(result.sections).toEqual([]);
   });
 
+  it("splits two education entries when the bullet marker prefixes the institution+date line directly", () => {
+    // Unlike Experience's lone "●" (always alone on its own line), some
+    // templates put the marker right on the institution+date line itself,
+    // with the degree on the next, unmarked line. Each "●"-marked line here
+    // still ends in a real date, so it must still start a new entry, not
+    // get swallowed as a bullet of whatever entry came before it.
+    const text = [
+      "Jane Doe",
+      "",
+      "Education",
+      "● Atlantic University, Dublin, Ireland Sep 2022 - Sep 2023",
+      "Masters of Science in Computing",
+      "● Some College, Surat, India Oct 2018 - May 2022",
+      "Bachelors of Technology in Computer Engineering",
+    ].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.education).toHaveLength(2);
+    expect(result.education[0]).toMatchObject({ years: "Sep 2022 - Sep 2023", company: "Masters of Science in Computing" });
+    expect(result.education[1]).toMatchObject({ years: "Oct 2018 - May 2022", company: "Bachelors of Technology in Computer Engineering" });
+  });
+
+  it("doesn't mistake a bullet mentioning a hyphenated word for a new entry header", () => {
+    const text = [
+      "Jane Doe",
+      "",
+      "Experience",
+      "Backend Engineer - Acme Corp",
+      "Jan 2021 - Present",
+      "●",
+      "Built and deployed a multi-tenant service used across many teams",
+    ].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.experience).toHaveLength(1);
+    expect(result.experience[0]?.bullets).toEqual(["Built and deployed a multi-tenant service used across many teams"]);
+  });
+
   it("captures a known-but-not-specially-parsed section like certificates", () => {
     const text = [
       "Jane Doe",
@@ -479,6 +519,50 @@ describe("extractFromText", () => {
     expect(result.sections).toContainEqual({
       heading: "Certificates",
       items: ["AWS Certified Solutions Architect", "MongoDB Search Badge"],
+    });
+  });
+
+  it("merges a wrapped, unmarked continuation line into a bulleted generic section's previous item", () => {
+    const text = [
+      "Jane Doe",
+      "",
+      "Projects",
+      "● Realtime Meeting Intelligence - Github Repo",
+      "o Developed AI meeting assistants for Microsoft Teams, streaming real-time",
+      "audio/video to power contextual insights.",
+      "o Architected the media pipeline for high-throughput,",
+      "low-latency handling.",
+    ].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.sections).toContainEqual({
+      heading: "Projects",
+      items: [
+        "Realtime Meeting Intelligence - Github Repo",
+        "Developed AI meeting assistants for Microsoft Teams, streaming real-time audio/video to power contextual insights.",
+        "Architected the media pipeline for high-throughput, low-latency handling.",
+      ],
+    });
+  });
+
+  it("doesn't merge separate unmarked lines in a generic section with no bullets at all", () => {
+    // Education-style list: several genuinely distinct "Degree, Institution"
+    // lines with no bullet marker anywhere in the section. Must stay one
+    // line per item, not merge into one blob just because they're unmarked.
+    const text = [
+      "Jane Doe",
+      "",
+      "Achievements",
+      "General Education Degree, Foreman College",
+      "CPR Certification, American Red Cross",
+    ].join("\n");
+
+    const result = extractFromText(text);
+
+    expect(result.sections).toContainEqual({
+      heading: "Achievements",
+      items: ["General Education Degree, Foreman College", "CPR Certification, American Red Cross"],
     });
   });
 

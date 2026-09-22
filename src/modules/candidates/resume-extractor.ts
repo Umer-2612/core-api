@@ -327,9 +327,20 @@ function isGenericHeaderCandidate(line: string): boolean {
   return GENERIC_HEADER_RE.test(trimmed);
 }
 
-function findSpecialKey(lower: string): SpecialKey | null {
+/** Justified-text PDFs sometimes stretch inter-word gaps into literal extra
+ * space characters (seen on some templates' "TOOLS & TECHNOLOGIES:" lines
+ * specifically, while everything else on the same resume stays single-
+ * spaced), so an exact-equality dictionary lookup on a header needs its
+ * whitespace collapsed first, or "tools  &  technologies" silently never
+ * matches "tools & technologies" and the whole section falls back to being
+ * captured generically instead of getting its dedicated parsing. */
+function normalizeHeaderText(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function findSpecialKey(normalized: string): SpecialKey | null {
   for (const [key, titles] of Object.entries(PARSED_SECTIONS)) {
-    if (titles.includes(lower)) return key as SpecialKey;
+    if (titles.includes(normalized)) return key as SpecialKey;
   }
   return null;
 }
@@ -348,10 +359,10 @@ interface DetectedHeader {
 function detectHeaders(lines: string[]): DetectedHeader[] {
   const genericTitleSet = new Set(GENERIC_SECTION_TITLES.map((t) => t.toLowerCase()));
   const classifyWholeLine = (text: string): SpecialKey | null | undefined => {
-    const lower = text.toLowerCase().trim();
-    const specialKey = findSpecialKey(lower);
+    const normalized = normalizeHeaderText(text);
+    const specialKey = findSpecialKey(normalized);
     if (specialKey !== null) return specialKey;
-    if (genericTitleSet.has(lower)) return null;
+    if (genericTitleSet.has(normalized)) return null;
     if (isGenericHeaderCandidate(text)) return null;
     return undefined; // not a header at all
   };
@@ -361,7 +372,7 @@ function detectHeaders(lines: string[]): DetectedHeader[] {
   // section on its own, only a real header like "TOOLS & TECHNOLOGIES:" is.
   const classifyInlinePrefix = (text: string): SpecialKey | null | undefined => {
     if (!isGenericHeaderCandidate(text)) return undefined;
-    return findSpecialKey(text.toLowerCase().trim());
+    return findSpecialKey(normalizeHeaderText(text));
   };
 
   const seen = new Set<string>();
@@ -369,21 +380,21 @@ function detectHeaders(lines: string[]): DetectedHeader[] {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const lower = line.toLowerCase().trim();
+    const normalized = normalizeHeaderText(line);
 
     const wholeLineKey = classifyWholeLine(line);
-    if (wholeLineKey !== undefined && !seen.has(lower)) {
-      seen.add(lower);
+    if (wholeLineKey !== undefined && !seen.has(normalized)) {
+      seen.add(normalized);
       headers.push({ index: i, raw: line, specialKey: wholeLineKey, inlineContent: null });
       continue;
     }
 
     const inlineSplit = /^(.{2,45}?):\s+(.+)$/.exec(line);
     if (inlineSplit) {
-      const prefixLower = inlineSplit[1].toLowerCase().trim();
+      const prefixNormalized = normalizeHeaderText(inlineSplit[1]);
       const inlineKey = classifyInlinePrefix(inlineSplit[1]);
-      if (inlineKey !== undefined && !seen.has(prefixLower)) {
-        seen.add(prefixLower);
+      if (inlineKey !== undefined && !seen.has(prefixNormalized)) {
+        seen.add(prefixNormalized);
         headers.push({ index: i, raw: inlineSplit[1], specialKey: inlineKey, inlineContent: inlineSplit[2].trim() });
       }
     }
@@ -409,10 +420,36 @@ function toDisplayHeading(raw: string): string {
  * present). Deliberately doesn't try to merge wrapped lines here: unlike a
  * job's bullet list, sections like Education mix free-form multi-line
  * entries in too many different shapes to guess reliably without AI. */
+/** Every bullet-marked line (top-level "●" or sub "o ") becomes its own
+ * item, with an unmarked line merged into the previous item as a wrapped
+ * continuation (PDF line-wrap, same as parseExperience's bullets), but only
+ * when this section actually uses bullet markers at all: an Education-style
+ * list of several genuinely separate, unmarked lines ("Degree, Institution"
+ * one per line, no markers anywhere) must stay one line per item instead,
+ * merging those would glue unrelated entries together. */
 function parseGenericSectionItems(lines: string[]): string[] {
-  return lines
-    .map((line) => line.replace(BULLET_LINE_RE, "").replace(SUB_BULLET_RE, "").trim())
-    .filter((line) => line.length > 0);
+  const hasBullets = lines.some((l) => BULLET_LINE_RE.test(l) || SUB_BULLET_RE.test(l));
+  const items: string[] = [];
+
+  for (const line of lines) {
+    if (BULLET_LINE_RE.test(line)) {
+      const text = line.replace(BULLET_LINE_RE, "").trim();
+      if (text) items.push(text);
+      continue;
+    }
+    if (SUB_BULLET_RE.test(line)) {
+      const text = line.replace(SUB_BULLET_RE, "").trim();
+      if (text) items.push(text);
+      continue;
+    }
+    if (hasBullets && items.length > 0) {
+      items[items.length - 1] = `${items[items.length - 1]} ${line}`.trim();
+    } else {
+      items.push(line);
+    }
+  }
+
+  return items;
 }
 
 function buildSections(lines: string[]): { special: Partial<Record<SpecialKey, string>>; generic: ResumeSection[] } {
@@ -671,8 +708,8 @@ function parseSkills(text: string): SkillGroup[] {
 // ─── Experience parser ───────────────────────────────────────────────────────
 
 function isSectionHeader(line: string): boolean {
-  const lower = line.toLowerCase().trim();
-  return ALL_TITLES.some((t) => t.toLowerCase() === lower || t.toUpperCase() === line.trim());
+  const normalized = normalizeHeaderText(line);
+  return ALL_TITLES.some((t) => normalizeHeaderText(t) === normalized);
 }
 
 function parseExperience(text: string): ParsedResumeExperience[] {
@@ -704,8 +741,12 @@ function parseExperience(text: string): ParsedResumeExperience[] {
   const ROLE_AT_COMPANY_RE = /^(.+?)\s+(?:at|@)\s+(.+)$/;
   // "Role - Company" or "Role – Company": common when there's no "at"/"@" separator.
   // Bounded to short, period-free lines so it doesn't swallow a wrapped bullet
-  // sentence that merely happens to contain a hyphen.
-  const ROLE_DASH_COMPANY_RE = /^([^-–—]{2,60}?)\s*[-–—]\s*([^-–—]{2,80})$/;
+  // sentence that merely happens to contain a hyphen. Requires actual spaces
+  // around the dash (not just \s*): otherwise a bullet mentioning a
+  // hyphenated compound word ("multi-tenant", "well-known", ...) matches too,
+  // since a bare hyphen has none of the whitespace a real "Role - Company"
+  // separator always does.
+  const ROLE_DASH_COMPANY_RE = /^([^-–—]{2,60}?)\s+[-–—]\s+([^-–—]{2,80})$/;
   // "Role, Company" (or "Degree, Institution"): the other very common header
   // separator besides "at"/"-". Only a single comma is unambiguous, "A, B, C"
   // could be a role plus a two-part location or company name, not a role and
@@ -732,22 +773,32 @@ function parseExperience(text: string): ParsedResumeExperience[] {
   };
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    let line = lines[i];
 
     if (BULLET_LINE_RE.test(line)) {
       const bulletText = line.replace(BULLET_LINE_RE, "").trim();
-      if (bulletText) {
-        bullets.push(bulletText);
-      } else if (i + 1 < lines.length && !looksLikeEntryHeader(lines[i + 1])) {
-        bullets.push(lines[++i]);
+      if (!bulletText) {
+        if (i + 1 < lines.length && !looksLikeEntryHeader(lines[i + 1])) bullets.push(lines[++i]);
+        continue;
       }
-      continue;
-    }
-
-    if (SUB_BULLET_RE.test(line)) {
+      if (!looksLikeEntryHeader(bulletText)) {
+        bullets.push(bulletText);
+        continue;
+      }
+      // The marker prefixes this entry's own header line directly (common
+      // for Education, where a per-entry "●" sits right on the institution
+      // + date line, not alone on its own line the way Experience uses it),
+      // not a supporting bullet. Falls through to the header checks below
+      // using the marker-stripped text, same as any other unmarked line.
+      line = bulletText;
+    } else if (SUB_BULLET_RE.test(line)) {
       const bulletText = line.replace(SUB_BULLET_RE, "").trim();
-      if (bulletText) bullets.push(bulletText);
-      continue;
+      if (!bulletText) continue;
+      if (!looksLikeEntryHeader(bulletText)) {
+        bullets.push(bulletText);
+        continue;
+      }
+      line = bulletText;
     }
 
     if (isSectionHeader(line)) {
