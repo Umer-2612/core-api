@@ -518,11 +518,14 @@ describe("extractFromText", () => {
 
     expect(result.sections).toContainEqual({
       heading: "Certificates",
-      items: ["AWS Certified Solutions Architect", "MongoDB Search Badge"],
+      entries: [
+        { title: "AWS Certified Solutions Architect", bullets: [] },
+        { title: "MongoDB Search Badge", bullets: [] },
+      ],
     });
   });
 
-  it("merges a wrapped, unmarked continuation line into a bulleted generic section's previous item", () => {
+  it("groups a bulleted generic section's sub-bullets under their own title, merging wrapped lines", () => {
     const text = [
       "Jane Doe",
       "",
@@ -532,16 +535,23 @@ describe("extractFromText", () => {
       "audio/video to power contextual insights.",
       "o Architected the media pipeline for high-throughput,",
       "low-latency handling.",
+      "● Second Project",
+      "o A single bullet here",
     ].join("\n");
 
     const result = extractFromText(text);
 
     expect(result.sections).toContainEqual({
       heading: "Projects",
-      items: [
-        "Realtime Meeting Intelligence - Github Repo",
-        "Developed AI meeting assistants for Microsoft Teams, streaming real-time audio/video to power contextual insights.",
-        "Architected the media pipeline for high-throughput, low-latency handling.",
+      entries: [
+        {
+          title: "Realtime Meeting Intelligence - Github Repo",
+          bullets: [
+            "Developed AI meeting assistants for Microsoft Teams, streaming real-time audio/video to power contextual insights.",
+            "Architected the media pipeline for high-throughput, low-latency handling.",
+          ],
+        },
+        { title: "Second Project", bullets: ["A single bullet here"] },
       ],
     });
   });
@@ -549,7 +559,7 @@ describe("extractFromText", () => {
   it("doesn't merge separate unmarked lines in a generic section with no bullets at all", () => {
     // Education-style list: several genuinely distinct "Degree, Institution"
     // lines with no bullet marker anywhere in the section. Must stay one
-    // line per item, not merge into one blob just because they're unmarked.
+    // entry per line, not merge into one blob just because they're unmarked.
     const text = [
       "Jane Doe",
       "",
@@ -562,7 +572,10 @@ describe("extractFromText", () => {
 
     expect(result.sections).toContainEqual({
       heading: "Achievements",
-      items: ["General Education Degree, Foreman College", "CPR Certification, American Red Cross"],
+      entries: [
+        { title: "General Education Degree, Foreman College", bullets: [] },
+        { title: "CPR Certification, American Red Cross", bullets: [] },
+      ],
     });
   });
 
@@ -573,7 +586,7 @@ describe("extractFromText", () => {
 
     expect(result.sections).toContainEqual({
       heading: "Patents",
-      items: ["Method for distributed cache invalidation, US1234567"],
+      entries: [{ title: "Method for distributed cache invalidation, US1234567", bullets: [] }],
     });
   });
 

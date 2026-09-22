@@ -17,6 +17,16 @@ export interface SkillGroup {
   items: string[];
 }
 
+/** One entry within a generic section, e.g. one project: `title` is its own
+ * top-level bullet line ("Realtime Meeting Intelligence - Github Repo"),
+ * `bullets` are the sub-bullets under it. A section with no bullet markers at
+ * all (an Education-style list of separate "Degree, Institution" lines) has
+ * one entry per line instead, each with empty `bullets`. */
+export interface ResumeSectionEntry {
+  title: string;
+  bullets: string[];
+}
+
 /** Any resume section besides summary/skills/experience/education (which get
  * dedicated parsing): certificates, achievements, projects, languages, or
  * anything else this specific resume happens to have. Nothing is dropped: a
@@ -24,7 +34,7 @@ export interface SkillGroup {
  * whatever heading text the resume itself used. */
 export interface ResumeSection {
   heading: string;
-  items: string[];
+  entries: ResumeSectionEntry[];
 }
 
 /** A hyperlink found anywhere in the PDF (LinkedIn/GitHub/portfolio in the
@@ -427,29 +437,39 @@ function toDisplayHeading(raw: string): string {
  * list of several genuinely separate, unmarked lines ("Degree, Institution"
  * one per line, no markers anywhere) must stay one line per item instead,
  * merging those would glue unrelated entries together. */
-function parseGenericSectionItems(lines: string[]): string[] {
+function parseGenericSectionEntries(lines: string[]): ResumeSectionEntry[] {
   const hasBullets = lines.some((l) => BULLET_LINE_RE.test(l) || SUB_BULLET_RE.test(l));
-  const items: string[] = [];
+  const entries: ResumeSectionEntry[] = [];
 
   for (const line of lines) {
     if (BULLET_LINE_RE.test(line)) {
       const text = line.replace(BULLET_LINE_RE, "").trim();
-      if (text) items.push(text);
+      if (text) entries.push({ title: text, bullets: [] });
       continue;
     }
     if (SUB_BULLET_RE.test(line)) {
       const text = line.replace(SUB_BULLET_RE, "").trim();
-      if (text) items.push(text);
+      if (!text) continue;
+      if (entries.length > 0) entries[entries.length - 1].bullets.push(text);
+      else entries.push({ title: text, bullets: [] }); // sub-bullet with no title line above it yet
       continue;
     }
-    if (hasBullets && items.length > 0) {
-      items[items.length - 1] = `${items[items.length - 1]} ${line}`.trim();
+    if (!hasBullets || entries.length === 0) {
+      entries.push({ title: line, bullets: [] });
+      continue;
+    }
+    // Wrapped continuation (PDF line-wrap, no marker): extend whichever of
+    // the current entry's fields is still open, its last bullet if it has
+    // any yet, otherwise the entry's own title line.
+    const last = entries[entries.length - 1];
+    if (last.bullets.length > 0) {
+      last.bullets[last.bullets.length - 1] = `${last.bullets[last.bullets.length - 1]} ${line}`.trim();
     } else {
-      items.push(line);
+      last.title = `${last.title} ${line}`.trim();
     }
   }
 
-  return items;
+  return entries;
 }
 
 function buildSections(lines: string[]): { special: Partial<Record<SpecialKey, string>>; generic: ResumeSection[] } {
@@ -468,8 +488,8 @@ function buildSections(lines: string[]): { special: Partial<Record<SpecialKey, s
       continue;
     }
 
-    const items = parseGenericSectionItems(contentLines);
-    if (items.length > 0) generic.push({ heading: toDisplayHeading(headers[h].raw), items });
+    const entries = parseGenericSectionEntries(contentLines);
+    if (entries.length > 0) generic.push({ heading: toDisplayHeading(headers[h].raw), entries });
   }
 
   return { special, generic };
