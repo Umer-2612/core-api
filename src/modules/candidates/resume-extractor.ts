@@ -426,17 +426,14 @@ function toDisplayHeading(raw: string): string {
   return trimmed;
 }
 
-/** Every non-empty line becomes its own item (bullet marker stripped if
- * present). Deliberately doesn't try to merge wrapped lines here: unlike a
- * job's bullet list, sections like Education mix free-form multi-line
- * entries in too many different shapes to guess reliably without AI. */
-/** Every bullet-marked line (top-level "●" or sub "o ") becomes its own
- * item, with an unmarked line merged into the previous item as a wrapped
- * continuation (PDF line-wrap, same as parseExperience's bullets), but only
- * when this section actually uses bullet markers at all: an Education-style
- * list of several genuinely separate, unmarked lines ("Degree, Institution"
- * one per line, no markers anywhere) must stay one line per item instead,
- * merging those would glue unrelated entries together. */
+/** Each top-level bullet ("●") starts a new entry; each sub-bullet ("o ")
+ * belongs to whichever entry is currently open. An unmarked line merges into
+ * the entry's last bullet (or its title, if no bullets have started yet) as
+ * a wrapped continuation (PDF line-wrap), but only when this section
+ * actually uses bullet markers at all: an Education-style list of several
+ * genuinely separate, unmarked lines ("Degree, Institution" one per line, no
+ * markers anywhere) must stay one entry per line instead, merging those
+ * would glue unrelated entries together. */
 function parseGenericSectionEntries(lines: string[]): ResumeSectionEntry[] {
   const hasBullets = lines.some((l) => BULLET_LINE_RE.test(l) || SUB_BULLET_RE.test(l));
   const entries: ResumeSectionEntry[] = [];
