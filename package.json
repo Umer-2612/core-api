@@ -10,6 +10,7 @@
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
     "seed:admin": "cross-env NODE_ENV=development tsx src/scripts/seed-super-admin.ts",
+    "seed:questions": "cross-env NODE_ENV=development tsx src/scripts/seed-questions.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
