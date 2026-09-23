@@ -41,6 +41,10 @@ const EnvSchema = z
     AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
     AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
     S3_BUCKET_NAME: z.string().min(1).optional(),
+
+    // Where judge-service is reachable for grading a dsa round's test cases.
+    // Not a secret, just addressing, same as core-api's own PORT.
+    JUDGE_SERVICE_URL: z.string().min(1).default("http://localhost:4001"),
   })
   .strip();
 
@@ -73,6 +77,8 @@ export const AWS_REGION = env.AWS_REGION;
 export const AWS_ACCESS_KEY_ID = env.AWS_ACCESS_KEY_ID;
 export const AWS_SECRET_ACCESS_KEY = env.AWS_SECRET_ACCESS_KEY;
 export const S3_BUCKET_NAME = env.S3_BUCKET_NAME;
+
+export const JUDGE_SERVICE_URL = env.JUDGE_SERVICE_URL;
 
 export const CORS_ORIGIN_LIST =
   env.CORS_ORIGINS?.split(",")

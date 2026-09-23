@@ -1,5 +1,8 @@
 import "reflect-metadata";
 import "@shared/config/env";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { toJsonValue } from "@modules/candidates/candidate-profile.repository";
 import { logger } from "@shared/utils/logger";
 import { connectDatabase, disconnectDatabase, prisma } from "@/db/prisma";
 
@@ -11,6 +14,21 @@ interface SeedQuestion {
   difficulty: Difficulty;
   tags: string[];
   starter_code: Record<string, string>;
+}
+
+interface GeneratedTestCase {
+  input: string;
+  expected_output: string;
+  locked: boolean;
+}
+
+/** dsa-test-cases.generated.json (verified test cases per question title, see that
+ * file's generation notes) is optional at the type level: seeding still works with
+ * empty test_cases before it exists, it just means no round can be graded yet. */
+function loadGeneratedTestCases(): Record<string, GeneratedTestCase[]> {
+  const path = join(__dirname, "dsa-test-cases.generated.json");
+  if (!existsSync(path)) return {};
+  return JSON.parse(readFileSync(path, "utf-8")) as Record<string, GeneratedTestCase[]>;
 }
 
 /** All starter code is just a same-shaped "read this, print that" reminder per language,
@@ -466,8 +484,20 @@ async function main() {
     return;
   }
 
-  await prisma.question.createMany({ data: QUESTIONS });
+  const generatedTestCases = loadGeneratedTestCases();
+  const rawData = QUESTIONS.map((question) => ({
+    ...question,
+    test_cases: generatedTestCases[question.title] ?? [],
+  }));
+  const missingTestCases = rawData.filter((q) => q.test_cases.length === 0).map((q) => q.title);
+
+  await prisma.question.createMany({
+    data: rawData.map((question) => ({ ...question, test_cases: toJsonValue(question.test_cases) })),
+  });
   logger.info(`Seeded ${QUESTIONS.length} DSA questions.`);
+  if (missingTestCases.length > 0) {
+    logger.warn(`${missingTestCases.length} question(s) seeded with no test cases yet: ${missingTestCases.join(", ")}`);
+  }
   await disconnectDatabase();
 }
 

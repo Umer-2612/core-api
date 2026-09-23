@@ -1,0 +1,2625 @@
+{
+  "Two Sum": [
+    {
+      "input": "2 7 11 15\n9",
+      "expected_output": "0 1\n",
+      "locked": false
+    },
+    {
+      "input": "3 2 4\n6",
+      "expected_output": "1 2\n",
+      "locked": false
+    },
+    {
+      "input": "3 3\n6",
+      "expected_output": "0 1\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3 4 5\n9",
+      "expected_output": "3 4\n",
+      "locked": true
+    },
+    {
+      "input": "-3 4 3 90\n0",
+      "expected_output": "0 2\n",
+      "locked": true
+    },
+    {
+      "input": "0 4 3 0\n0",
+      "expected_output": "0 3\n",
+      "locked": true
+    },
+    {
+      "input": "1 5 11 15\n26",
+      "expected_output": "2 3\n",
+      "locked": true
+    },
+    {
+      "input": "-1 -2 -3 -4 -5\n-8",
+      "expected_output": "2 4\n",
+      "locked": true
+    },
+    {
+      "input": "5 75 25\n100",
+      "expected_output": "1 2\n",
+      "locked": true
+    },
+    {
+      "input": "10 20 30 40 50\n70",
+      "expected_output": "2 3\n",
+      "locked": true
+    },
+    {
+      "input": "8 8\n16",
+      "expected_output": "0 1\n",
+      "locked": true
+    },
+    {
+      "input": "100 200 300 400\n700",
+      "expected_output": "2 3\n",
+      "locked": true
+    },
+    {
+      "input": "-10 10\n0",
+      "expected_output": "0 1\n",
+      "locked": true
+    },
+    {
+      "input": "1 3 5 7 9 11\n20",
+      "expected_output": "4 5\n",
+      "locked": true
+    },
+    {
+      "input": "4 4 4 4\n8",
+      "expected_output": "0 1\n",
+      "locked": true
+    },
+    {
+      "input": "1000000 -1000000\n0",
+      "expected_output": "0 1\n",
+      "locked": true
+    },
+    {
+      "input": "2 5 5 11\n10",
+      "expected_output": "1 2\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5 6 7 8 9 10\n19",
+      "expected_output": "8 9\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20\n39",
+      "expected_output": "18 19\n",
+      "locked": true
+    }
+  ],
+  "Reverse Words in a String": [
+    {
+      "input": "the sky is blue",
+      "expected_output": "blue is sky the\n",
+      "locked": false
+    },
+    {
+      "input": "hello world",
+      "expected_output": "world hello\n",
+      "locked": false
+    },
+    {
+      "input": "singleword",
+      "expected_output": "singleword\n",
+      "locked": false
+    },
+    {
+      "input": "a b c d e f g",
+      "expected_output": "g f e d c b a\n",
+      "locked": true
+    },
+    {
+      "input": "Hello   World",
+      "expected_output": "World Hello\n",
+      "locked": true
+    },
+    {
+      "input": "one",
+      "expected_output": "one\n",
+      "locked": true
+    },
+    {
+      "input": "  leading and trailing  ",
+      "expected_output": "trailing and leading\n",
+      "locked": true
+    },
+    {
+      "input": "x y",
+      "expected_output": "y x\n",
+      "locked": true
+    },
+    {
+      "input": "multiple   spaces   here",
+      "expected_output": "here spaces multiple\n",
+      "locked": true
+    },
+    {
+      "input": "The Quick Brown Fox Jumps",
+      "expected_output": "Jumps Fox Brown Quick The\n",
+      "locked": true
+    },
+    {
+      "input": "a",
+      "expected_output": "a\n",
+      "locked": true
+    },
+    {
+      "input": "z y x w v u t s r q",
+      "expected_output": "q r s t u v w x y z\n",
+      "locked": true
+    },
+    {
+      "input": "word",
+      "expected_output": "word\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5 6 7 8 9 10",
+      "expected_output": "10 9 8 7 6 5 4 3 2 1\n",
+      "locked": true
+    },
+    {
+      "input": "Testing one two three",
+      "expected_output": "three two one Testing\n",
+      "locked": true
+    },
+    {
+      "input": "backwards forwards",
+      "expected_output": "forwards backwards\n",
+      "locked": true
+    },
+    {
+      "input": "   multiple     internal    spaces   here   too   ",
+      "expected_output": "too here spaces internal multiple\n",
+      "locked": true
+    }
+  ],
+  "Valid Parentheses": [
+    {
+      "input": "{[()]}",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "()",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "()[]{}",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "(]",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "([)]",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "{[]}",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "(((())))",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "(()",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "())",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "[",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "]",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "{{{{}}}}",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "()()()",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "([{}])",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "((()))",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": ")))",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "{[(])}",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "[({})]",
+      "expected_output": "true\n",
+      "locked": true
+    }
+  ],
+  "Maximum Subarray Sum": [
+    {
+      "input": "-2 1 -3 4 -1 2 1 -5 4",
+      "expected_output": "6\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "-1",
+      "expected_output": "-1\n",
+      "locked": false
+    },
+    {
+      "input": "5 4 -1 7 8",
+      "expected_output": "23\n",
+      "locked": true
+    },
+    {
+      "input": "-5 -4 -3 -2 -1",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5",
+      "expected_output": "15\n",
+      "locked": true
+    },
+    {
+      "input": "-1 -2 -3 4 5 -1",
+      "expected_output": "9\n",
+      "locked": true
+    },
+    {
+      "input": "0 0 0 0",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "100 -1 -1 -1 100",
+      "expected_output": "197\n",
+      "locked": true
+    },
+    {
+      "input": "-1 -2 -3 -100 -1",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "3 -2 5 -1",
+      "expected_output": "6\n",
+      "locked": true
+    },
+    {
+      "input": "1 -1 1 -1 1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "2 3 -2 4 -1 2 1 -5 4",
+      "expected_output": "9\n",
+      "locked": true
+    },
+    {
+      "input": "-8 3 -1 4 -8",
+      "expected_output": "6\n",
+      "locked": true
+    },
+    {
+      "input": "10",
+      "expected_output": "10\n",
+      "locked": true
+    },
+    {
+      "input": "-10",
+      "expected_output": "-10\n",
+      "locked": true
+    },
+    {
+      "input": "5 -1 5 -1 5",
+      "expected_output": "13\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 -1 -2 3 4",
+      "expected_output": "7\n",
+      "locked": true
+    },
+    {
+      "input": "9 -1 -2 -3 8 7",
+      "expected_output": "18\n",
+      "locked": true
+    }
+  ],
+  "Longest Substring Without Repeating Characters": [
+    {
+      "input": "abcabcbb",
+      "expected_output": "3\n",
+      "locked": false
+    },
+    {
+      "input": "bbbbb",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "pwwkew",
+      "expected_output": "3\n",
+      "locked": false
+    },
+    {
+      "input": "a",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "au",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "dvdf",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "abba",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "tmmzuxt",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "abcdefg",
+      "expected_output": "7\n",
+      "locked": true
+    },
+    {
+      "input": "aab",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "abcdeabcde",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "zzzzzzzzzz",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "abcdefgabcdefg",
+      "expected_output": "7\n",
+      "locked": true
+    },
+    {
+      "input": "xyzxyzxyz",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "aA",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "112233",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "thequickbrownfox",
+      "expected_output": "14\n",
+      "locked": true
+    },
+    {
+      "input": "aaaaaaaaaab",
+      "expected_output": "2\n",
+      "locked": true
+    }
+  ],
+  "Binary Search": [
+    {
+      "input": "1 3 5 7 9 11\n7",
+      "expected_output": "3\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3 4 5\n1",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3 4 5\n5",
+      "expected_output": "4\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3 4 5\n6",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "5\n5",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "5\n3",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "1 3 5 7 9\n4",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "-10 -5 0 5 10\n0",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "-10 -5 0 5 10\n-10",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "2 4 6 8 10 12 14\n14",
+      "expected_output": "6\n",
+      "locked": true
+    },
+    {
+      "input": "1 1 1 1 1\n1",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "10 20 30 40 50 60 70 80 90 100\n55",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "1 2\n1",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "1 2\n2",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "0\n0",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "-100 -50 0 50 100\n100",
+      "expected_output": "4\n",
+      "locked": true
+    },
+    {
+      "input": "1 3 5 7 9 11 13 15 17 19\n1",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "1 3 5 7 9 11 13 15 17 19\n19",
+      "expected_output": "9\n",
+      "locked": true
+    },
+    {
+      "input": "1 3 5 7 9 11 13 15 17 19\n10",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "100 200 300 400 500\n300",
+      "expected_output": "2\n",
+      "locked": true
+    }
+  ],
+  "Merge Two Sorted Arrays": [
+    {
+      "input": "1 3 5\n2 4 6",
+      "expected_output": "1 2 3 4 5 6\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3\n4 5 6",
+      "expected_output": "1 2 3 4 5 6\n",
+      "locked": false
+    },
+    {
+      "input": "-5 -3 -1\n-4 -2 0",
+      "expected_output": "-5 -4 -3 -2 -1 0\n",
+      "locked": false
+    },
+    {
+      "input": "1\n2",
+      "expected_output": "1 2\n",
+      "locked": true
+    },
+    {
+      "input": "5\n1",
+      "expected_output": "1 5\n",
+      "locked": true
+    },
+    {
+      "input": "1 1 1\n1 1 1",
+      "expected_output": "1 1 1 1 1 1\n",
+      "locked": true
+    },
+    {
+      "input": "\n1 2 3",
+      "expected_output": "1 2 3\n",
+      "locked": true
+    },
+    {
+      "input": "-10 0 10\n-5 5 15",
+      "expected_output": "-10 -5 0 5 10 15\n",
+      "locked": true
+    },
+    {
+      "input": "2 4 6 8 10\n1 3 5 7 9",
+      "expected_output": "1 2 3 4 5 6 7 8 9 10\n",
+      "locked": true
+    },
+    {
+      "input": "100\n50",
+      "expected_output": "50 100\n",
+      "locked": true
+    },
+    {
+      "input": "0 0 0\n0 0 0",
+      "expected_output": "0 0 0 0 0 0\n",
+      "locked": true
+    },
+    {
+      "input": "-100 -50\n0 50 100",
+      "expected_output": "-100 -50 0 50 100\n",
+      "locked": true
+    },
+    {
+      "input": "1 3 5 7 9 11 13\n2 4 6 8 10 12 14",
+      "expected_output": "1 2 3 4 5 6 7 8 9 10 11 12 13 14\n",
+      "locked": true
+    },
+    {
+      "input": "7\n7",
+      "expected_output": "7 7\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5\n1 2 3 4 5",
+      "expected_output": "1 1 2 2 3 3 4 4 5 5\n",
+      "locked": true
+    },
+    {
+      "input": "-1\n1",
+      "expected_output": "-1 1\n",
+      "locked": true
+    },
+    {
+      "input": "1000 2000\n1500",
+      "expected_output": "1000 1500 2000\n",
+      "locked": true
+    }
+  ],
+  "Nth Fibonacci Number": [
+    {
+      "input": "10",
+      "expected_output": "55\n",
+      "locked": false
+    },
+    {
+      "input": "0",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "2",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "3",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "5",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "6",
+      "expected_output": "8\n",
+      "locked": true
+    },
+    {
+      "input": "7",
+      "expected_output": "13\n",
+      "locked": true
+    },
+    {
+      "input": "15",
+      "expected_output": "610\n",
+      "locked": true
+    },
+    {
+      "input": "20",
+      "expected_output": "6765\n",
+      "locked": true
+    },
+    {
+      "input": "25",
+      "expected_output": "75025\n",
+      "locked": true
+    },
+    {
+      "input": "30",
+      "expected_output": "832040\n",
+      "locked": true
+    },
+    {
+      "input": "4",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "8",
+      "expected_output": "21\n",
+      "locked": true
+    },
+    {
+      "input": "9",
+      "expected_output": "34\n",
+      "locked": true
+    },
+    {
+      "input": "12",
+      "expected_output": "144\n",
+      "locked": true
+    },
+    {
+      "input": "18",
+      "expected_output": "2584\n",
+      "locked": true
+    },
+    {
+      "input": "22",
+      "expected_output": "17711\n",
+      "locked": true
+    },
+    {
+      "input": "28",
+      "expected_output": "317811\n",
+      "locked": true
+    },
+    {
+      "input": "35",
+      "expected_output": "9227465\n",
+      "locked": true
+    }
+  ],
+  "Palindrome Check": [
+    {
+      "input": "A man a plan a canal Panama",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "race a car",
+      "expected_output": "false\n",
+      "locked": false
+    },
+    {
+      "input": "Was it a car or a cat I saw",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "a",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "ab",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "abba",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "Able was I ere I saw Elba",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "hello",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "Madam",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "No lemon no melon",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "12321",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "12345",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "Never odd or even",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "Do geese see God",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "not a palindrome",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "x",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "xx",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "xy",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "Step on no pets",
+      "expected_output": "true\n",
+      "locked": true
+    }
+  ],
+  "Climbing Stairs": [
+    {
+      "input": "5",
+      "expected_output": "8\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "2",
+      "expected_output": "2\n",
+      "locked": false
+    },
+    {
+      "input": "3",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "4",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "0",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "6",
+      "expected_output": "13\n",
+      "locked": true
+    },
+    {
+      "input": "7",
+      "expected_output": "21\n",
+      "locked": true
+    },
+    {
+      "input": "8",
+      "expected_output": "34\n",
+      "locked": true
+    },
+    {
+      "input": "10",
+      "expected_output": "89\n",
+      "locked": true
+    },
+    {
+      "input": "12",
+      "expected_output": "233\n",
+      "locked": true
+    },
+    {
+      "input": "15",
+      "expected_output": "987\n",
+      "locked": true
+    },
+    {
+      "input": "18",
+      "expected_output": "4181\n",
+      "locked": true
+    },
+    {
+      "input": "20",
+      "expected_output": "10946\n",
+      "locked": true
+    },
+    {
+      "input": "22",
+      "expected_output": "28657\n",
+      "locked": true
+    },
+    {
+      "input": "25",
+      "expected_output": "121393\n",
+      "locked": true
+    },
+    {
+      "input": "28",
+      "expected_output": "514229\n",
+      "locked": true
+    },
+    {
+      "input": "30",
+      "expected_output": "1346269\n",
+      "locked": true
+    },
+    {
+      "input": "9",
+      "expected_output": "55\n",
+      "locked": true
+    }
+  ],
+  "Find the Missing Number": [
+    {
+      "input": "3 0 1",
+      "expected_output": "2\n",
+      "locked": false
+    },
+    {
+      "input": "0",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "0 1 2 4 5",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "1 2",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "9 6 4 2 3 5 7 0 1",
+      "expected_output": "8\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 6 7 8 9 10",
+      "expected_output": "-5\n",
+      "locked": true
+    },
+    {
+      "input": "0 2",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1 0",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "2 0 1 4",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "0 1 3",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "8 7 6 5 4 3 2 1",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "5 4 3 1 0",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "9 8 7 6 5 4 3 2 1 0",
+      "expected_output": "10\n",
+      "locked": true
+    },
+    {
+      "input": "0",
+      "expected_output": "1\n",
+      "locked": true
+    }
+  ],
+  "Most Frequent Character": [
+    {
+      "input": "abracadabra",
+      "expected_output": "a\n",
+      "locked": false
+    },
+    {
+      "input": "aabbcc",
+      "expected_output": "a\n",
+      "locked": false
+    },
+    {
+      "input": "z",
+      "expected_output": "z\n",
+      "locked": false
+    },
+    {
+      "input": "aaaa",
+      "expected_output": "a\n",
+      "locked": true
+    },
+    {
+      "input": "abcabcabc",
+      "expected_output": "a\n",
+      "locked": true
+    },
+    {
+      "input": "xxyyyzz",
+      "expected_output": "y\n",
+      "locked": true
+    },
+    {
+      "input": "mississippi",
+      "expected_output": "i\n",
+      "locked": true
+    },
+    {
+      "input": "aabbbcc",
+      "expected_output": "b\n",
+      "locked": true
+    },
+    {
+      "input": "hello world",
+      "expected_output": "l\n",
+      "locked": true
+    },
+    {
+      "input": "programming",
+      "expected_output": "r\n",
+      "locked": true
+    },
+    {
+      "input": "banana",
+      "expected_output": "a\n",
+      "locked": true
+    },
+    {
+      "input": "112233",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "qwerty",
+      "expected_output": "q\n",
+      "locked": true
+    },
+    {
+      "input": "aabbccddeeffgghhii",
+      "expected_output": "a\n",
+      "locked": true
+    },
+    {
+      "input": "xyzzyx",
+      "expected_output": "x\n",
+      "locked": true
+    }
+  ],
+  "Valid Anagram": [
+    {
+      "input": "listen\nsilent",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "hello\nworld",
+      "expected_output": "false\n",
+      "locked": false
+    },
+    {
+      "input": "abc\ncba",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "a\na",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "a\nb",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "aabbcc\nabcabc",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "anagram\nnagaram",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "rat\ncar",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "abcd\ndcba",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "aaa\naaa",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "aaa\naab",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "programming\nmingrogpram",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "xyz\nzyx",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "test\ntest",
+      "expected_output": "true\n",
+      "locked": true
+    }
+  ],
+  "Rotate Array": [
+    {
+      "input": "1 2 3 4 5 6 7\n3",
+      "expected_output": "5 6 7 1 2 3 4\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3\n0",
+      "expected_output": "1 2 3\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3\n1",
+      "expected_output": "3 1 2\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3\n3",
+      "expected_output": "1 2 3\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3\n4",
+      "expected_output": "3 1 2\n",
+      "locked": true
+    },
+    {
+      "input": "1\n5",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1 2\n1",
+      "expected_output": "2 1\n",
+      "locked": true
+    },
+    {
+      "input": "-1 -100 3 99\n2",
+      "expected_output": "3 99 -1 -100\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5\n2",
+      "expected_output": "4 5 1 2 3\n",
+      "locked": true
+    },
+    {
+      "input": "10 20 30 40 50\n10",
+      "expected_output": "10 20 30 40 50\n",
+      "locked": true
+    },
+    {
+      "input": "5 4 3 2 1\n2",
+      "expected_output": "2 1 5 4 3\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5 6 7 8 9 10\n5",
+      "expected_output": "6 7 8 9 10 1 2 3 4 5\n",
+      "locked": true
+    },
+    {
+      "input": "0 0 0\n1",
+      "expected_output": "0 0 0\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4\n100",
+      "expected_output": "1 2 3 4\n",
+      "locked": true
+    },
+    {
+      "input": "9 8 7\n7",
+      "expected_output": "7 9 8\n",
+      "locked": true
+    }
+  ],
+  "Number of Islands": [
+    {
+      "input": "3 3\n1 1 0\n0 1 0\n0 0 1",
+      "expected_output": "2\n",
+      "locked": false
+    },
+    {
+      "input": "1 1\n0",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "1 1\n1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "2 2\n1 1\n1 1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "2 2\n0 0\n0 0",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "4 4\n1 1 0 0\n1 1 0 0\n0 0 1 0\n0 0 0 1",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "3 3\n1 0 1\n0 1 0\n1 0 1",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "5 5\n1 1 1 0 0\n1 1 0 0 0\n0 0 1 0 0\n0 0 0 1 1\n0 0 0 1 1",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "1 5\n1 0 1 0 1",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "5 1\n1\n0\n1\n0\n1",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "3 4\n0 0 0 0\n0 1 1 0\n0 0 0 0",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "2 3\n1 1 1\n1 1 1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "4 4\n0 0 0 0\n0 0 0 0\n0 0 0 0\n0 0 0 0",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "3 3\n1 1 1\n1 1 1\n1 1 1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "6 6\n1 0 0 0 0 1\n0 0 0 0 0 0\n0 0 1 1 0 0\n0 0 1 1 0 0\n0 0 0 0 0 0\n1 0 0 0 0 1",
+      "expected_output": "5\n",
+      "locked": true
+    }
+  ],
+  "Merge Overlapping Intervals": [
+    {
+      "input": "4\n1 3\n2 6\n8 10\n15 18",
+      "expected_output": "1 6\n8 10\n15 18\n",
+      "locked": false
+    },
+    {
+      "input": "1\n1 5",
+      "expected_output": "1 5\n",
+      "locked": false
+    },
+    {
+      "input": "2\n1 2\n3 4",
+      "expected_output": "1 2\n3 4\n",
+      "locked": false
+    },
+    {
+      "input": "2\n1 4\n2 3",
+      "expected_output": "1 4\n",
+      "locked": true
+    },
+    {
+      "input": "3\n1 4\n4 5\n6 7",
+      "expected_output": "1 5\n6 7\n",
+      "locked": true
+    },
+    {
+      "input": "5\n1 3\n2 4\n5 7\n6 8\n9 10",
+      "expected_output": "1 4\n5 8\n9 10\n",
+      "locked": true
+    },
+    {
+      "input": "3\n1 10\n2 3\n4 5",
+      "expected_output": "1 10\n",
+      "locked": true
+    },
+    {
+      "input": "2\n0 0\n0 0",
+      "expected_output": "0 0\n",
+      "locked": true
+    },
+    {
+      "input": "4\n1 2\n2 3\n3 4\n4 5",
+      "expected_output": "1 5\n",
+      "locked": true
+    },
+    {
+      "input": "3\n-5 -1\n-3 0\n1 5",
+      "expected_output": "-5 0\n1 5\n",
+      "locked": true
+    },
+    {
+      "input": "6\n1 2\n3 5\n4 8\n9 10\n2 6\n15 18",
+      "expected_output": "1 8\n9 10\n15 18\n",
+      "locked": true
+    },
+    {
+      "input": "2\n1 100\n50 60",
+      "expected_output": "1 100\n",
+      "locked": true
+    },
+    {
+      "input": "1\n5 5",
+      "expected_output": "5 5\n",
+      "locked": true
+    },
+    {
+      "input": "4\n10 20\n1 2\n3 4\n25 30",
+      "expected_output": "1 2\n3 4\n10 20\n25 30\n",
+      "locked": true
+    }
+  ],
+  "Longest Common Prefix": [
+    {
+      "input": "3\nflower\nflow\nflight",
+      "expected_output": "fl\n",
+      "locked": false
+    },
+    {
+      "input": "3\ndog\nracecar\ncar",
+      "expected_output": "\n",
+      "locked": false
+    },
+    {
+      "input": "1\nalone",
+      "expected_output": "alone\n",
+      "locked": false
+    },
+    {
+      "input": "2\nsame\nsame",
+      "expected_output": "same\n",
+      "locked": true
+    },
+    {
+      "input": "3\ninterview\ninternet\ninternal",
+      "expected_output": "inter\n",
+      "locked": true
+    },
+    {
+      "input": "4\nabc\nabcd\nabcde\nab",
+      "expected_output": "ab\n",
+      "locked": true
+    },
+    {
+      "input": "2\n\nabc",
+      "expected_output": "\n",
+      "locked": true
+    },
+    {
+      "input": "3\naaa\naaa\naaa",
+      "expected_output": "aaa\n",
+      "locked": true
+    },
+    {
+      "input": "5\ngo\ngopher\ngolang\ngoogle\ngood",
+      "expected_output": "go\n",
+      "locked": true
+    },
+    {
+      "input": "2\nabcdef\nxyz",
+      "expected_output": "\n",
+      "locked": true
+    },
+    {
+      "input": "3\nprefix\npreach\nprepare",
+      "expected_output": "pre\n",
+      "locked": true
+    },
+    {
+      "input": "2\na\na",
+      "expected_output": "a\n",
+      "locked": true
+    },
+    {
+      "input": "4\ntest\ntesting\ntester\ntested",
+      "expected_output": "test\n",
+      "locked": true
+    }
+  ],
+  "Kth Largest Element": [
+    {
+      "input": "3 2 1 5 6 4\n2",
+      "expected_output": "5\n",
+      "locked": false
+    },
+    {
+      "input": "3 2 3 1 2 4 5 5 6\n4",
+      "expected_output": "4\n",
+      "locked": false
+    },
+    {
+      "input": "1\n1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "5 5 5 5\n2",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "-1 -2 -3 -4\n1",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "10 9 8 7 6 5 4 3 2 1\n5",
+      "expected_output": "6\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5\n1",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5\n5",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "100 200 300\n2",
+      "expected_output": "200\n",
+      "locked": true
+    },
+    {
+      "input": "7 7 7 1 1 1\n3",
+      "expected_output": "7\n",
+      "locked": true
+    },
+    {
+      "input": "-5 0 5\n2",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "9\n1",
+      "expected_output": "9\n",
+      "locked": true
+    },
+    {
+      "input": "4 4 4 4 4\n1",
+      "expected_output": "4\n",
+      "locked": true
+    }
+  ],
+  "Minimum Coins for an Amount": [
+    {
+      "input": "11\n1 2 5",
+      "expected_output": "3\n",
+      "locked": false
+    },
+    {
+      "input": "0\n1 2 5",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "3\n2",
+      "expected_output": "-1\n",
+      "locked": false
+    },
+    {
+      "input": "7\n2 4",
+      "expected_output": "-1\n",
+      "locked": true
+    },
+    {
+      "input": "1\n1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "100\n1 5 10 25",
+      "expected_output": "4\n",
+      "locked": true
+    },
+    {
+      "input": "6\n1 3 4",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "27\n1 5 10 25",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "10\n2 5",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "9\n3",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "50\n1 5 10 20",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "13\n1 3 4 5",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "1000\n1 100 500",
+      "expected_output": "2\n",
+      "locked": true
+    }
+  ],
+  "Count Set Bits": [
+    {
+      "input": "29",
+      "expected_output": "4\n",
+      "locked": false
+    },
+    {
+      "input": "0",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "2",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "7",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "8",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "15",
+      "expected_output": "4\n",
+      "locked": true
+    },
+    {
+      "input": "16",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "255",
+      "expected_output": "8\n",
+      "locked": true
+    },
+    {
+      "input": "1024",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1023",
+      "expected_output": "10\n",
+      "locked": true
+    },
+    {
+      "input": "100",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "31",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "63",
+      "expected_output": "6\n",
+      "locked": true
+    },
+    {
+      "input": "1000000",
+      "expected_output": "7\n",
+      "locked": true
+    }
+  ],
+  "Longest Increasing Subsequence": [
+    {
+      "input": "10 9 2 5 3 7 101 18",
+      "expected_output": "4\n",
+      "locked": false
+    },
+    {
+      "input": "0 1 0 3 2 3",
+      "expected_output": "4\n",
+      "locked": false
+    },
+    {
+      "input": "7 7 7 7 7",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "5 4 3 2 1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1 3 6 7 9 4 10 5 6",
+      "expected_output": "6\n",
+      "locked": true
+    },
+    {
+      "input": "10 22 9 33 21 50 41 60",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "3 10 2 1 20",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "50 3 10 7 40 80",
+      "expected_output": "4\n",
+      "locked": true
+    },
+    {
+      "input": "1 2",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "2 1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "4 10 4 3 8 9",
+      "expected_output": "3\n",
+      "locked": true
+    }
+  ],
+  "Edit Distance": [
+    {
+      "input": "cat\ncut",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "horse\nros",
+      "expected_output": "3\n",
+      "locked": false
+    },
+    {
+      "input": "\na",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "abc\nabc",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "kitten\nsitting",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "intention\nexecution",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "abcdef\nazced",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "sunday\nsaturday",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "flaw\nlawn",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "abc\nyabd",
+      "expected_output": "2\n",
+      "locked": true
+    }
+  ],
+  "0/1 Knapsack": [
+    {
+      "input": "3 50\n10 60\n20 100\n30 120",
+      "expected_output": "220\n",
+      "locked": false
+    },
+    {
+      "input": "1 10\n5 10",
+      "expected_output": "10\n",
+      "locked": false
+    },
+    {
+      "input": "1 4\n5 10",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "2 3\n1 6\n2 10",
+      "expected_output": "16\n",
+      "locked": true
+    },
+    {
+      "input": "4 10\n5 10\n4 40\n6 30\n3 50",
+      "expected_output": "90\n",
+      "locked": true
+    },
+    {
+      "input": "3 4\n1 1\n3 4\n4 5",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "5 15\n1 1\n3 4\n4 5\n5 6\n2 3",
+      "expected_output": "19\n",
+      "locked": true
+    },
+    {
+      "input": "2 50\n10 60\n40 200",
+      "expected_output": "260\n",
+      "locked": true
+    },
+    {
+      "input": "1 0\n1 10",
+      "expected_output": "0\n",
+      "locked": true
+    }
+  ],
+  "Next Greater Element": [
+    {
+      "input": "4 5 2 10 8",
+      "expected_output": "5 10 10 -1 -1\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "-1\n",
+      "locked": false
+    },
+    {
+      "input": "5 4 3 2 1",
+      "expected_output": "-1 -1 -1 -1 -1\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3 4 5",
+      "expected_output": "2 3 4 5 -1\n",
+      "locked": true
+    },
+    {
+      "input": "1 3 2 4",
+      "expected_output": "3 4 4 -1\n",
+      "locked": true
+    },
+    {
+      "input": "2 2 2",
+      "expected_output": "-1 -1 -1\n",
+      "locked": true
+    },
+    {
+      "input": "10 5 12 3 8 20",
+      "expected_output": "12 12 20 8 20 -1\n",
+      "locked": true
+    },
+    {
+      "input": "13 7 6 12",
+      "expected_output": "-1 12 12 -1\n",
+      "locked": true
+    },
+    {
+      "input": "9 1 2 3 4",
+      "expected_output": "-1 2 3 4 -1\n",
+      "locked": true
+    },
+    {
+      "input": "100 99 98",
+      "expected_output": "-1 -1 -1\n",
+      "locked": true
+    }
+  ],
+  "Tree Height": [
+    {
+      "input": "6\n1 2\n1 3\n2 4\n2 5\n3 6",
+      "expected_output": "2\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "2\n1 2",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "3\n1 2\n2 3",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "4\n1 2\n1 3\n1 4",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "7\n1 2\n1 3\n2 4\n2 5\n3 6\n3 7",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "5\n1 2\n2 3\n3 4\n4 5",
+      "expected_output": "4\n",
+      "locked": true
+    },
+    {
+      "input": "8\n1 2\n2 3\n2 4\n4 5\n4 6\n1 7\n7 8",
+      "expected_output": "3\n",
+      "locked": true
+    }
+  ],
+  "Kth Smallest Element": [
+    {
+      "input": "7 10 4 3 20 15\n3",
+      "expected_output": "7\n",
+      "locked": false
+    },
+    {
+      "input": "1\n1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "5 5 5 5\n1",
+      "expected_output": "5\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 3 4 5\n1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5\n5",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "-5 -1 -3\n2",
+      "expected_output": "-3\n",
+      "locked": true
+    },
+    {
+      "input": "10 9 8 7 6\n5",
+      "expected_output": "10\n",
+      "locked": true
+    },
+    {
+      "input": "100 50 25\n2",
+      "expected_output": "50\n",
+      "locked": true
+    },
+    {
+      "input": "3 1 2\n2",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "9 9 9 1\n2",
+      "expected_output": "9\n",
+      "locked": true
+    }
+  ],
+  "Word Break": [
+    {
+      "input": "pineapple\npine apple",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "applepie\napple pie",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "catsanddog\ncats sand and dog",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "leetcode\nleet code",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "goodmorning\ngood morning morn ing",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "abcd\nab cd",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "abcd\na abc",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "hello\nhe llo",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "aaaaaaa\naaaa aa",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "impossibleword\nim possible",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "notthere\nnope",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "x\nx",
+      "expected_output": "true\n",
+      "locked": true
+    }
+  ],
+  "Count Subsets With a Given Sum": [
+    {
+      "input": "1 2 3 3\n6",
+      "expected_output": "3\n",
+      "locked": false
+    },
+    {
+      "input": "1 1 1 1\n2",
+      "expected_output": "6\n",
+      "locked": false
+    },
+    {
+      "input": "5\n5",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "5\n10",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5\n5",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "2 2 2 2\n4",
+      "expected_output": "6\n",
+      "locked": true
+    },
+    {
+      "input": "1 1 1 1 1\n3",
+      "expected_output": "10\n",
+      "locked": true
+    },
+    {
+      "input": "10 5 2 3\n5",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "3 3 3\n6",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3\n0",
+      "expected_output": "1\n",
+      "locked": true
+    }
+  ],
+  "Combination Sum Count": [
+    {
+      "input": "2 3 6 7\n7",
+      "expected_output": "2\n",
+      "locked": false
+    },
+    {
+      "input": "2 3 5\n8",
+      "expected_output": "3\n",
+      "locked": false
+    },
+    {
+      "input": "2\n1",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "1\n5",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "3 5 7\n10",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "2 4\n8",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "5\n5",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "2 3\n0",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1 2\n4",
+      "expected_output": "3\n",
+      "locked": true
+    }
+  ],
+  "Spiral Matrix Order": [
+    {
+      "input": "3 3\n1 2 3\n4 5 6\n7 8 9",
+      "expected_output": "1 2 3 6 9 8 7 4 5\n",
+      "locked": false
+    },
+    {
+      "input": "1 1\n5",
+      "expected_output": "5\n",
+      "locked": false
+    },
+    {
+      "input": "1 4\n1 2 3 4",
+      "expected_output": "1 2 3 4\n",
+      "locked": false
+    },
+    {
+      "input": "4 1\n1\n2\n3\n4",
+      "expected_output": "1 2 3 4\n",
+      "locked": true
+    },
+    {
+      "input": "2 2\n1 2\n3 4",
+      "expected_output": "1 2 4 3\n",
+      "locked": true
+    },
+    {
+      "input": "3 4\n1 2 3 4\n5 6 7 8\n9 10 11 12",
+      "expected_output": "1 2 3 4 8 12 11 10 9 5 6 7\n",
+      "locked": true
+    },
+    {
+      "input": "4 3\n1 2 3\n4 5 6\n7 8 9\n10 11 12",
+      "expected_output": "1 2 3 6 9 12 11 10 7 4 5 8\n",
+      "locked": true
+    },
+    {
+      "input": "5 5\n1 2 3 4 5\n6 7 8 9 10\n11 12 13 14 15\n16 17 18 19 20\n21 22 23 24 25",
+      "expected_output": "1 2 3 4 5 10 15 20 25 24 23 22 21 16 11 6 7 8 9 14 19 18 17 12 13\n",
+      "locked": true
+    }
+  ],
+  "Rotate Matrix 90 Degrees": [
+    {
+      "input": "2\n1 2\n3 4",
+      "expected_output": "3 1\n4 2\n",
+      "locked": false
+    },
+    {
+      "input": "1\n5",
+      "expected_output": "5\n",
+      "locked": false
+    },
+    {
+      "input": "3\n1 2 3\n4 5 6\n7 8 9",
+      "expected_output": "7 4 1\n8 5 2\n9 6 3\n",
+      "locked": false
+    },
+    {
+      "input": "4\n1 2 3 4\n5 6 7 8\n9 10 11 12\n13 14 15 16",
+      "expected_output": "13 9 5 1\n14 10 6 2\n15 11 7 3\n16 12 8 4\n",
+      "locked": true
+    },
+    {
+      "input": "2\n0 1\n1 0",
+      "expected_output": "1 0\n0 1\n",
+      "locked": true
+    }
+  ],
+  "Find the Duplicate Number": [
+    {
+      "input": "1 3 4 2 2",
+      "expected_output": "2\n",
+      "locked": false
+    },
+    {
+      "input": "1 1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "3 1 3 4 2",
+      "expected_output": "3\n",
+      "locked": false
+    },
+    {
+      "input": "2 2 2 2 2",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5 6 7 8 9 5",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "5 4 3 2 1 1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 2",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "4 3 1 2 4",
+      "expected_output": "4\n",
+      "locked": true
+    }
+  ],
+  "Container With Most Water": [
+    {
+      "input": "1 2 4 3",
+      "expected_output": "4\n",
+      "locked": false
+    },
+    {
+      "input": "1 1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "4 3 2 1 4",
+      "expected_output": "16\n",
+      "locked": false
+    },
+    {
+      "input": "1 2 1",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "1 8 6 2 5 4 8 3 7",
+      "expected_output": "49\n",
+      "locked": true
+    },
+    {
+      "input": "2 2 2 2 2",
+      "expected_output": "8\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5 6 7 8 9 10",
+      "expected_output": "25\n",
+      "locked": true
+    },
+    {
+      "input": "10 1 1 1 1 1 1 1 1 10",
+      "expected_output": "90\n",
+      "locked": true
+    },
+    {
+      "input": "5 1",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "1 5",
+      "expected_output": "1\n",
+      "locked": true
+    }
+  ],
+  "Trapping Rain Water": [
+    {
+      "input": "3 0 2 0 4",
+      "expected_output": "7\n",
+      "locked": false
+    },
+    {
+      "input": "0 1 0 2 1 0 1 3 2 1 2 1",
+      "expected_output": "6\n",
+      "locked": false
+    },
+    {
+      "input": "4 2 0 3 2 5",
+      "expected_output": "9\n",
+      "locked": false
+    },
+    {
+      "input": "0 0 0 0",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "5 4 3 2 1",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 4 5",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "3 3 3 3",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "0",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "2 0 2",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "5 0 5 0 5 0 5",
+      "expected_output": "15\n",
+      "locked": true
+    }
+  ],
+  "Course Schedule": [
+    {
+      "input": "4\n3\n1 0\n2 1\n3 2",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "2\n1\n1 0",
+      "expected_output": "true\n",
+      "locked": false
+    },
+    {
+      "input": "2\n2\n1 0\n0 1",
+      "expected_output": "false\n",
+      "locked": false
+    },
+    {
+      "input": "1\n0",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "3\n0",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "5\n4\n1 0\n2 0\n3 1\n4 2",
+      "expected_output": "true\n",
+      "locked": true
+    },
+    {
+      "input": "3\n3\n0 1\n1 2\n2 0",
+      "expected_output": "false\n",
+      "locked": true
+    },
+    {
+      "input": "6\n5\n1 0\n2 0\n3 1\n3 2\n5 4",
+      "expected_output": "true\n",
+      "locked": true
+    }
+  ],
+  "Shortest Path in an Unweighted Graph": [
+    {
+      "input": "5 5\n0 1\n1 2\n2 3\n3 4\n0 4\n0 3",
+      "expected_output": "2\n",
+      "locked": false
+    },
+    {
+      "input": "2 1\n0 1\n0 1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "3 0\n0 2",
+      "expected_output": "-1\n",
+      "locked": false
+    },
+    {
+      "input": "1 0\n0 0",
+      "expected_output": "0\n",
+      "locked": true
+    },
+    {
+      "input": "4 3\n0 1\n1 2\n2 3\n0 3",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "6 6\n0 1\n1 2\n2 3\n3 4\n4 5\n0 5\n0 3",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "3 2\n0 1\n1 2\n0 2",
+      "expected_output": "2\n",
+      "locked": true
+    }
+  ],
+  "GCD and LCM": [
+    {
+      "input": "12 18",
+      "expected_output": "6 36\n",
+      "locked": false
+    },
+    {
+      "input": "1 1",
+      "expected_output": "1 1\n",
+      "locked": false
+    },
+    {
+      "input": "7 13",
+      "expected_output": "1 91\n",
+      "locked": false
+    },
+    {
+      "input": "100 75",
+      "expected_output": "25 300\n",
+      "locked": true
+    },
+    {
+      "input": "8 12",
+      "expected_output": "4 24\n",
+      "locked": true
+    },
+    {
+      "input": "17 5",
+      "expected_output": "1 85\n",
+      "locked": true
+    },
+    {
+      "input": "1000000 500000",
+      "expected_output": "500000 1000000\n",
+      "locked": true
+    },
+    {
+      "input": "9 3",
+      "expected_output": "3 9\n",
+      "locked": true
+    },
+    {
+      "input": "6 4",
+      "expected_output": "2 12\n",
+      "locked": true
+    },
+    {
+      "input": "48 18",
+      "expected_output": "6 144\n",
+      "locked": true
+    },
+    {
+      "input": "2 3",
+      "expected_output": "1 6\n",
+      "locked": true
+    },
+    {
+      "input": "100 1",
+      "expected_output": "1 100\n",
+      "locked": true
+    }
+  ],
+  "Count Primes": [
+    {
+      "input": "10",
+      "expected_output": "4\n",
+      "locked": false
+    },
+    {
+      "input": "0",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "0\n",
+      "locked": false
+    },
+    {
+      "input": "2",
+      "expected_output": "1\n",
+      "locked": true
+    },
+    {
+      "input": "3",
+      "expected_output": "2\n",
+      "locked": true
+    },
+    {
+      "input": "20",
+      "expected_output": "8\n",
+      "locked": true
+    },
+    {
+      "input": "100",
+      "expected_output": "25\n",
+      "locked": true
+    },
+    {
+      "input": "1000",
+      "expected_output": "168\n",
+      "locked": true
+    },
+    {
+      "input": "50",
+      "expected_output": "15\n",
+      "locked": true
+    },
+    {
+      "input": "17",
+      "expected_output": "7\n",
+      "locked": true
+    },
+    {
+      "input": "30",
+      "expected_output": "10\n",
+      "locked": true
+    },
+    {
+      "input": "2",
+      "expected_output": "1\n",
+      "locked": true
+    }
+  ],
+  "Single Number": [
+    {
+      "input": "4 1 2 1 2",
+      "expected_output": "4\n",
+      "locked": false
+    },
+    {
+      "input": "1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "2 2 1",
+      "expected_output": "1\n",
+      "locked": false
+    },
+    {
+      "input": "-1 -1 -2",
+      "expected_output": "-2\n",
+      "locked": true
+    },
+    {
+      "input": "0 0 5",
+      "expected_output": "5\n",
+      "locked": true
+    },
+    {
+      "input": "7 3 3 7 9",
+      "expected_output": "9\n",
+      "locked": true
+    },
+    {
+      "input": "100 200 100",
+      "expected_output": "200\n",
+      "locked": true
+    },
+    {
+      "input": "1 2 3 2 1",
+      "expected_output": "3\n",
+      "locked": true
+    },
+    {
+      "input": "5 5 8",
+      "expected_output": "8\n",
+      "locked": true
+    },
+    {
+      "input": "10 20 10",
+      "expected_output": "20\n",
+      "locked": true
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { container, injectable } from "tsyringe";
-import { submitDsaRoundSchema } from "@modules/portal/portal.dto";
+import { runDsaTestsSchema, submitDsaQuestionSchema } from "@modules/portal/portal.dto";
 import { PortalController } from "@modules/portal/portal.controller";
 import { ValidationMiddleware } from "@shared/middlewares/validation.middleware";
 import type { Routes } from "@shared/interfaces/routes.interface";
@@ -21,6 +21,16 @@ export class PortalRoute implements Routes {
   private initializeRoutes() {
     this.router.get("/:token", this.portalController.getPortal);
     this.router.get("/:token/dsa", this.portalController.getDsaRound);
-    this.router.post("/:token/dsa/submit", ValidationMiddleware(submitDsaRoundSchema), this.portalController.submitDsaRound);
+    this.router.post("/:token/dsa/start", this.portalController.startDsaRound);
+    this.router.post(
+      "/:token/dsa/questions/:questionId/run-tests",
+      ValidationMiddleware(runDsaTestsSchema),
+      this.portalController.runDsaTests,
+    );
+    this.router.post(
+      "/:token/dsa/questions/:questionId/submit",
+      ValidationMiddleware(submitDsaQuestionSchema),
+      this.portalController.submitDsaQuestion,
+    );
   }
 }

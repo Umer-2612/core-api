@@ -205,27 +205,85 @@ the token doesn't match any session.
 ```
 
 ### `GET /portal/:token/dsa`
-No auth. The DSA round's question and current state. The question is picked at random from
-the global `Question` pool the first time this is called for a given round, then fixed for
-the rest of that round (calling this again never reassigns it). 404s for an unknown token,
-503s if the question pool is empty (shouldn't happen once seeded, see `seed:questions`).
+No auth. The DSA round's two questions and current state. The questions are picked at random
+from the global `Question` pool the first time this is called for a given round, then fixed
+for the rest of that round (calling this again never reassigns them). `open_test_cases` are
+the unlocked, worked-example test cases only, `total_test_cases` also counts the locked ones
+without exposing them. `started_at` is `null` until `POST .../dsa/start` is called; the
+frontend uses it (plus `duration_minutes`) to compute the countdown, not a value it tracks
+itself, so a page reload doesn't reset the clock. 404s for an unknown token, 503s if the
+question pool is empty (shouldn't happen once seeded, see `seed:questions`).
 ```json
 // response 200
-{ "data": { "round": { "id": "uuid", "status": "pending | completed", "submission": { "code": "string", "language": "string", "submitted_at": "date" } } }, "question": { "id": "uuid", "title": "string", "prompt": "string", "difficulty": "easy | medium | hard", "tags": "string[] (topic tags, e.g. \"arrays\", not company tags)", "starter_code": { "javascript": "string", "python": "string", "...": "one key per supported language" } } }
+{
+  "data": {
+    "round_id": "uuid",
+    "status": "pending | completed",
+    "started_at": "date | null",
+    "duration_minutes": 60,
+    "questions": [
+      {
+        "id": "uuid", "title": "string", "prompt": "string", "difficulty": "easy | medium | hard",
+        "tags": ["string, topic tags like \"arrays\", not company tags"],
+        "starter_code": { "javascript": "string", "python": "string", "...": "one key per supported language" },
+        "open_test_cases": [{ "input": "string", "expected_output": "string" }],
+        "total_test_cases": "number",
+        "submission": { "question_id": "uuid", "code": "string", "language": "string", "test_results": { "passed": "number", "total": "number" }, "submitted_at": "date" }
+      }
+    ]
+  },
+  "message": "dsa round"
+}
 ```
 
-### `POST /portal/:token/dsa/submit`
-No auth. Locks in the candidate's final code and marks the round `completed`. One-shot: a
-round that's already `completed` 409s instead of overwriting the earlier submission. No
-auto-grading, a hiring manager reads the submitted code directly (see the candidate detail
-page on web-frontend, once that's wired up to show it).
+### `POST /portal/:token/dsa/start`
+No auth. Idempotent: starts the round's 60-minute timer the first time it's called, a later
+call (e.g. a page reload) just returns the already-recorded start time unchanged.
+```json
+// response 200
+{ "data": { "started_at": "date" }, "message": "dsa round started" }
+```
+
+### `POST /portal/:token/dsa/questions/:questionId/run-tests`
+No auth. A dry run: grades the given code against every one of the question's test cases via
+judge-service (server-to-server, not the browser calling it directly the way ad hoc "Run with
+custom input" does), but saves nothing, the candidate can call this as many times as they
+like. 400s if the round hasn't been started yet (`POST .../dsa/start` first) or the language
+isn't supported, 404s if `questionId` isn't one of this round's two questions. Locked test
+cases only ever report `passed`, never their input/expected/actual output.
 ```json
 // request
 { "code": "string", "language": "string" }
 // response 200
-{ "data": InterviewRound, "message": "dsa round submitted" }
+{
+  "data": {
+    "passed": "number",
+    "total": "number",
+    "results": [
+      { "locked": false, "passed": "boolean", "input": "string", "expected_output": "string", "actual_output": "string" },
+      { "locked": true, "passed": "boolean" }
+    ]
+  },
+  "message": "test run"
+}
+```
+
+### `POST /portal/:token/dsa/questions/:questionId/submit`
+No auth. Grades the code the same way as `run-tests`, then locks it in as that question's
+final submission (one-shot: a question that's already submitted 409s instead of overwriting
+it). Once every question in the round has a submission, the round's `status` flips to
+`completed`. No server-side deadline enforcement, the candidate portal auto-submits whatever's
+in the editor when its client-side timer hits zero; this endpoint trusts that rather than
+rejecting a submission that arrives a little late and losing the candidate's code.
+```json
+// request
+{ "code": "string", "language": "string" }
+// response 200
+{ "data": { "code": "string", "language": "string", "test_results": { "passed": "number", "total": "number" }, "submitted_at": "date" }, "message": "question submitted" }
+// response 400 (round not started yet)
+{ "success": false, "error": { "code": 400, "message": "Start the round before running or submitting code" } }
 // response 409 (already submitted)
-{ "success": false, "error": { "code": 409, "message": "This round has already been submitted" } }
+{ "success": false, "error": { "code": 409, "message": "This question has already been submitted" } }
 ```
 
 ## Shapes
@@ -283,9 +341,11 @@ only come from reading the PDF directly, not from `extractFromText`.
 
 **InterviewSessionWithRounds**: `access_token` is the candidate portal link's token (see
 "The candidate portal" above), only ever meaningful to the hiring manager who needs to send
-it, never rotated. A round's `submission` is only set once a candidate submits that round.
+it, never rotated. A `dsa` round's `submissions` is keyed by question id, only present once
+the candidate submits that question; `started_at` is when they clicked "Start", not when they
+opened the link.
 ```json
-{ "id": "uuid", "job_id": "uuid", "candidate_id": "uuid", "access_token": "uuid", "scheduled_at": "date", "status": "scheduled | completed | cancelled", "created_at": "date", "rounds": [{ "id": "uuid", "round_type": "dsa | vscode | technical_ai", "sequence": "number", "status": "pending | completed", "submission": "{ code, language, submitted_at } | null", "created_at": "date" }] }
+{ "id": "uuid", "job_id": "uuid", "candidate_id": "uuid", "access_token": "uuid", "scheduled_at": "date", "status": "scheduled | completed | cancelled", "created_at": "date", "rounds": [{ "id": "uuid", "round_type": "dsa | vscode | technical_ai", "sequence": "number", "status": "pending | completed", "question_ids": "string[]", "started_at": "date | null", "submissions": "{ [question_id]: { code, language, test_results: { passed, total }, submitted_at } } | null", "created_at": "date" }] }
 ```
 
 ## Database
@@ -314,5 +374,5 @@ Question  (1) ----< (many) InterviewRound            (only dsa rounds have one a
 - **Candidate**: `id, job_id (FK), full_name, email (nullable), resume_file_name, resume_key, created_by (FK), created_at`. One row per uploaded resume. `resume_key` is the S3 object key, the file itself never touches Postgres. `full_name`/`email` come from the resume parser when it finds them, otherwise `full_name` falls back to the file name and `email` stays null.
 - **CandidateProfile**: `id, candidate_id (FK, unique), phone (nullable), summary (nullable), skills (JSON array of `{ category, items }`), experience (JSON array of `{ role, company, years, bullets }`), education (same shape as experience), sections (JSON array of `{ heading, entries: { title, bullets }[] }`, everything else the resume had), links (JSON array of `{ label, url }`, every PDF hyperlink found), created_at`. What the resume parser found beyond name and email, one row per candidate, created (possibly empty) at upload time regardless of whether the parse fully succeeded.
 - **InterviewSession**: `id, job_id (FK), candidate_id (FK, unique), access_token (unique), scheduled_at, status, created_by (FK), created_at`. At most one row per candidate, scheduling a second one 409s. `access_token` is generated once at creation and never rotated, it's the whole candidate portal's login-free access key.
-- **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai), sequence, status, question_id (FK to Question, nullable), submission (JSON `{ code, language, submitted_at }`, nullable), created_at`. Always exactly three per session, created alongside it. Only `dsa` is implemented so far: `question_id` is set the first time the candidate opens that round (random pick from `Question`, then fixed), `submission` is set once they submit it, which also flips `status` to `completed`.
-- **Question**: `id, title, prompt, difficulty (easy | medium | hard), tags (string array, topic tags like "arrays"/"dynamic-programming", not company tags, this platform doesn't do company-specific sets), starter_code (JSON, one key per supported language), created_at`. A global pool of original questions (not scraped from LeetCode or any other source), seeded via `npm run seed:questions`, not yet authored per-job or picked by JD relevance.
+- **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai), sequence, status, question_ids (string array, not a real FK, see "The candidate portal" above for why), started_at (nullable), submissions (JSON, keyed by question id, nullable), created_at`. Always exactly three per session, created alongside it. Only `dsa` is implemented so far: `question_ids` is set (two questions) the first time the candidate opens that round (random pick from `Question`, then fixed), `started_at` when they click "Start", `submissions` gains an entry per question as they submit it, and `status` flips to `completed` once every question in the round has one.
+- **Question**: `id, title, prompt, difficulty (easy | medium | hard), tags (string array, topic tags like "arrays"/"dynamic-programming", not company tags, this platform doesn't do company-specific sets), starter_code (JSON, one key per supported language), test_cases (JSON array of `{ input, expected_output, locked }`, the first few unlocked as worked examples, the rest locked and graded but never shown), created_at`. A global pool of original questions (not scraped from LeetCode or any other source), seeded via `npm run seed:questions`, not yet authored per-job or picked by JD relevance.
