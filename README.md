@@ -24,8 +24,11 @@ Backend service for the Interview Platform. Handles authentication and organizat
   far, the VSCode sandbox and AI technical rounds aren't yet.
 - The candidate portal (`/portal/:token`, no auth): the one place a candidate reaches
   directly, gated only by their session's unguessable `access_token`, never a login. The `dsa`
-  round assigns a question at random from a global pool the first time it's opened (then keeps
-  it fixed), lets the candidate submit their final code once, and locks the round after that.
+  round assigns 2 questions at random from a global pool the first time it's opened (then keeps
+  them fixed), starts a 60-minute timer once the candidate clicks "Start", grades a submission
+  against each question's test cases (via judge-service, server-to-server) showing pass/fail
+  counts without ever exposing the hidden test cases themselves, and locks a question once
+  it's submitted (one-shot per question, not per round).
 
 Two roles exist: `super_admin` (the platform owner, one account, created by a seed script or
 `POST /auth/bootstrap-admin` in development) and `hiring_manager` (created only by a super
@@ -92,7 +95,7 @@ invite link or separate accept-password step.
 
 ## Seeding DSA questions
 
-The `dsa` round picks a question at random from the `questions` table. Seed the starter pool
+Each `dsa` round assigns 2 random questions from the `questions` table. Seed the pool
 (currently 39 original questions, written from scratch, not scraped from LeetCode or any
 other source, across arrays/strings/hash-map/two-pointers/sliding-window/stack/binary-search/
 sorting/dynamic-programming/backtracking/greedy/graphs/trees/matrix/bit-manipulation/math,
@@ -101,6 +104,13 @@ each tagged by topic, not company; skips if any already exist):
 ```bash
 npm run seed:questions
 ```
+
+Each question ships with 15-20 test cases (3 shown to the candidate as worked examples, the
+rest hidden and used to grade a submission), in `src/scripts/dsa-test-cases.generated.json`.
+Every case's `expected_output` was computed by actually running a reference solution through
+a live Judge0 instance (via `src/scripts/generate-test-cases.py`), never hand-typed, so a
+correct submission is verified to actually pass. Re-run that script (needs judge-service
+running locally first) whenever a question's format changes or new questions are added.
 
 ## Database
 

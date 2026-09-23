@@ -141,17 +141,22 @@ model InterviewRound {
   round_type  InterviewRoundType
   sequence    Int
   status      InterviewRoundStatus @default(pending)
-  /// Only set for a `dsa` round: the question assigned the first time the
+  /// Only set for a `dsa` round: the questions assigned the first time the
   /// candidate opens it (randomly picked from the `Question` pool, then
-  /// fixed for the rest of the round).
-  question_id String?
-  /// Only set once the candidate submits: final code, language, and when.
-  /// No auto-grading yet, a hiring manager reads this directly.
-  submission  Json?
-  created_at  DateTime             @default(now())
+  /// fixed for the rest of the round). Plain array of Question ids, not a
+  /// real FK, the pool is small and centrally managed, a join table would
+  /// be pure ceremony at this size.
+  question_ids String[]            @default([])
+  /// Only set once the candidate clicks "Start": the round's 60-minute
+  /// timer counts down from here, not from when the link was opened.
+  started_at   DateTime?
+  /// Keyed by question id: `{ [question_id]: { code, language,
+  /// test_results: { passed, total }, submitted_at } }`. No auto-grading
+  /// beyond the test-case pass/fail count, a hiring manager reads the code.
+  submissions  Json?
+  created_at   DateTime             @default(now())
 
-  session  InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
-  question Question?        @relation(fields: [question_id], references: [id])
+  session InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
 
   @@index([session_id])
   @@map("interview_rounds")
@@ -169,9 +174,11 @@ model Question {
   tags         String[]           @default([])
   /// Starter code per language id, e.g. `{ "javascript": "...", "python": "..." }`.
   starter_code Json
+  /// `{ input, expected_output, locked }[]`. The first (unlocked) ones are
+  /// shown to the candidate as worked examples; locked ones are graded but
+  /// never shown, same as a typical online judge.
+  test_cases   Json
   created_at   DateTime           @default(now())
-
-  rounds InterviewRound[]
 
   @@map("questions")
 }

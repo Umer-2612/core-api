@@ -1,6 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
 import { container, injectable } from "tsyringe";
-import type { SubmitDsaRoundDto } from "@modules/portal/portal.dto";
+import type { RunDsaTestsDto, SubmitDsaQuestionDto } from "@modules/portal/portal.dto";
 import { PortalService } from "@modules/portal/portal.service";
 import { asyncHandler } from "@shared/utils/asyncHandler";
 
@@ -22,8 +22,26 @@ export class PortalController {
     res.status(200).json({ data: round, message: "dsa round" });
   });
 
-  public submitDsaRound: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const round = await this.portalService.submitDsaRound(req.params.token as string, req.body as SubmitDsaRoundDto);
-    res.status(200).json({ data: round, message: "dsa round submitted" });
+  public startDsaRound: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const result = await this.portalService.startDsaRound(req.params.token as string);
+    res.status(200).json({ data: result, message: "dsa round started" });
+  });
+
+  public runDsaTests: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const result = await this.portalService.runDsaTests(
+      req.params.token as string,
+      req.params.questionId as string,
+      req.body as RunDsaTestsDto,
+    );
+    res.status(200).json({ data: result, message: "test run" });
+  });
+
+  public submitDsaQuestion: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const submission = await this.portalService.submitDsaQuestion(
+      req.params.token as string,
+      req.params.questionId as string,
+      req.body as SubmitDsaQuestionDto,
+    );
+    res.status(200).json({ data: submission, message: "question submitted" });
   });
 }

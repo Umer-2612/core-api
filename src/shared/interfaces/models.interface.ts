@@ -42,10 +42,26 @@ export interface InterviewSessionWithRounds extends InterviewSession {
   rounds: InterviewRound[];
 }
 
-/** What a candidate saved on a `dsa` round's `submission` Json column. */
-export interface RoundSubmission {
+/** One entry in a Question's `test_cases` Json column. Locked cases are graded but
+ * never shown to the candidate, unlocked ones are worked examples. */
+export interface TestCase {
+  input: string;
+  expected_output: string;
+  locked: boolean;
+}
+
+/** How many of a question's test cases a submission (or a "run tests" attempt) passed. */
+export interface TestResults {
+  passed: number;
+  total: number;
+}
+
+/** What a candidate saved for one question on a `dsa` round's `submissions` Json
+ * column, keyed by question id: `Record<question_id, QuestionSubmission>`. */
+export interface QuestionSubmission {
   code: string;
   language: string;
+  test_results: TestResults;
   submitted_at: string;
 }
 
