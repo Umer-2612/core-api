@@ -30,6 +30,7 @@ function makeQuestion(overrides: Partial<Question> = {}): Question {
     title: "Two Sum",
     prompt: "Find two indices that sum to target.",
     difficulty: "easy",
+    tags: ["arrays", "hash-map"],
     starter_code: { javascript: "// start here\n" },
     created_at: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
@@ -102,6 +103,7 @@ describe("PortalService", () => {
     it("assigns a random question the first time it's opened", async () => {
       const view = await service.getDsaRound("tok-abc");
       expect(view.question.id).toBe("question-1");
+      expect(view.question.tags).toEqual(["arrays", "hash-map"]);
       expect(view.round.status).toBe("pending");
       expect(view.round.submission).toBeNull();
     });

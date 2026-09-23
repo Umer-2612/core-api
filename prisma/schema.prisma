@@ -164,6 +164,9 @@ model Question {
   title        String
   prompt       String
   difficulty   QuestionDifficulty @default(medium)
+  /// Topic tags, e.g. ["arrays", "two-pointers"]. Not company tags, this
+  /// platform doesn't do company-specific question sets.
+  tags         String[]           @default([])
   /// Starter code per language id, e.g. `{ "javascript": "...", "python": "..." }`.
   starter_code Json
   created_at   DateTime           @default(now())

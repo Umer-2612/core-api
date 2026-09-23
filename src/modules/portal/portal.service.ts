@@ -21,7 +21,14 @@ export interface PortalOverview {
 
 export interface DsaRoundView {
   round: { id: string; status: InterviewRoundStatus; submission: RoundSubmission | null };
-  question: { id: string; title: string; prompt: string; difficulty: QuestionDifficulty; starter_code: Record<string, string> };
+  question: {
+    id: string;
+    title: string;
+    prompt: string;
+    difficulty: QuestionDifficulty;
+    tags: string[];
+    starter_code: Record<string, string>;
+  };
 }
 
 export class PortalService {
@@ -77,6 +84,7 @@ export class PortalService {
         title: question.title,
         prompt: question.prompt,
         difficulty: question.difficulty,
+        tags: question.tags,
         starter_code: question.starter_code as Record<string, string>,
       },
     };
