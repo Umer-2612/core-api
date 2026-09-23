@@ -19,8 +19,13 @@ Backend service for the Interview Platform. Handles authentication and organizat
   certificate badges), labeled with the exact resume text each link is attached to. The parsed
   result lives in a separate `CandidateProfile` row.
 - Interviews: a hiring manager schedules an interview for a candidate. Scheduling creates
-  three rounds (`dsa`, `vscode`, `technical_ai`) alongside it; running those rounds isn't
-  implemented in this service yet, only scheduling them is.
+  three rounds (`dsa`, `vscode`, `technical_ai`) alongside it, plus one `access_token` for the
+  whole session, the candidate's one link into the portal below. Only `dsa` is implemented so
+  far, the VSCode sandbox and AI technical rounds aren't yet.
+- The candidate portal (`/portal/:token`, no auth): the one place a candidate reaches
+  directly, gated only by their session's unguessable `access_token`, never a login. The `dsa`
+  round assigns a question at random from a global pool the first time it's opened (then keeps
+  it fixed), lets the candidate submit their final code once, and locks the round after that.
 
 Two roles exist: `super_admin` (the platform owner, one account, created by a seed script or
 `POST /auth/bootstrap-admin` in development) and `hiring_manager` (created only by a super
@@ -85,11 +90,24 @@ or, in development, by calling `POST /auth/bootstrap-admin` (see `API.md`).
 Every hiring manager account is created directly by the super admin, through `POST /users`, no
 invite link or separate accept-password step.
 
+## Seeding DSA questions
+
+The `dsa` round picks a question at random from the `questions` table. Seed the starter pool
+(currently 39 original questions, written from scratch, not scraped from LeetCode or any
+other source, across arrays/strings/hash-map/two-pointers/sliding-window/stack/binary-search/
+sorting/dynamic-programming/backtracking/greedy/graphs/trees/matrix/bit-manipulation/math,
+each tagged by topic, not company; skips if any already exist):
+
+```bash
+npm run seed:questions
+```
+
 ## Database
 
 One Postgres database, hosted on Supabase, shared across every repo in this project. This
-service owns seven tables: `companies`, `users`, `jobs`, `candidates`, `candidate_profiles`,
-`interview_sessions`, `interview_rounds`. Full schema and relationships: see `API.md`.
+service owns eight tables: `companies`, `users`, `jobs`, `candidates`, `candidate_profiles`,
+`interview_sessions`, `interview_rounds`, `questions`. Full schema and relationships: see
+`API.md`.
 
 ## Resume storage (S3)
 

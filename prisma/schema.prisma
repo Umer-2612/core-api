@@ -35,6 +35,12 @@ enum InterviewRoundStatus {
   completed
 }
 
+enum QuestionDifficulty {
+  easy
+  medium
+  hard
+}
+
 model Company {
   id         String   @id @default(uuid())
   name       String   @unique
@@ -111,6 +117,10 @@ model InterviewSession {
   id           String                 @id @default(uuid())
   job_id       String
   candidate_id String                 @unique
+  /// The one link a candidate uses for the whole portal (all three rounds),
+  /// no login: `/interview/:access_token` on web-frontend. Opaque, unguessable,
+  /// generated once at scheduling time, never rotated.
+  access_token String                 @unique @default(uuid())
   scheduled_at DateTime
   status       InterviewSessionStatus @default(scheduled)
   created_by   String
@@ -126,17 +136,44 @@ model InterviewSession {
 }
 
 model InterviewRound {
-  id         String               @id @default(uuid())
-  session_id String
-  round_type InterviewRoundType
-  sequence   Int
-  status     InterviewRoundStatus @default(pending)
-  created_at DateTime             @default(now())
+  id          String               @id @default(uuid())
+  session_id  String
+  round_type  InterviewRoundType
+  sequence    Int
+  status      InterviewRoundStatus @default(pending)
+  /// Only set for a `dsa` round: the question assigned the first time the
+  /// candidate opens it (randomly picked from the `Question` pool, then
+  /// fixed for the rest of the round).
+  question_id String?
+  /// Only set once the candidate submits: final code, language, and when.
+  /// No auto-grading yet, a hiring manager reads this directly.
+  submission  Json?
+  created_at  DateTime             @default(now())
 
-  session InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  session  InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  question Question?        @relation(fields: [question_id], references: [id])
 
   @@index([session_id])
   @@map("interview_rounds")
+}
+
+/// A DSA question a candidate can be assigned during their `dsa` round.
+/// Global pool for now, no per-job/per-hiring-manager authoring yet.
+model Question {
+  id           String             @id @default(uuid())
+  title        String
+  prompt       String
+  difficulty   QuestionDifficulty @default(medium)
+  /// Topic tags, e.g. ["arrays", "two-pointers"]. Not company tags, this
+  /// platform doesn't do company-specific question sets.
+  tags         String[]           @default([])
+  /// Starter code per language id, e.g. `{ "javascript": "...", "python": "..." }`.
+  starter_code Json
+  created_at   DateTime           @default(now())
+
+  rounds InterviewRound[]
+
+  @@map("questions")
 }
 
 /// What the resume extractor pulled out of the PDF text, beyond the name and

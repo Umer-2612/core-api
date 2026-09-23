@@ -4,6 +4,7 @@ import { container } from "tsyringe";
 import { AuthRoute } from "@modules/auth/auth.routes";
 import { CompaniesRoute } from "@modules/companies/companies.routes";
 import { JobsRoute } from "@modules/jobs/jobs.routes";
+import { PortalRoute } from "@modules/portal/portal.routes";
 import { UsersRoute } from "@modules/users/users.routes";
 import { setupContainer } from "@shared/config/container";
 import { logger } from "@shared/utils/logger";
@@ -21,6 +22,7 @@ async function bootstrap() {
     container.resolve(UsersRoute),
     container.resolve(JobsRoute),
     container.resolve(CompaniesRoute),
+    container.resolve(PortalRoute),
   ];
 
   const appInstance = new App(routes);

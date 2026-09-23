@@ -13,6 +13,8 @@ import type {
   InterviewSession,
   InterviewSessionStatus,
   Job,
+  Question,
+  QuestionDifficulty,
   User,
   UserRole,
   UserStatus,
@@ -28,6 +30,8 @@ export type {
   InterviewSession,
   InterviewSessionStatus,
   Job,
+  Question,
+  QuestionDifficulty,
   User,
   UserRole,
   UserStatus,
@@ -36,6 +40,13 @@ export type {
 /** An interview session with its (always exactly three) rounds attached. */
 export interface InterviewSessionWithRounds extends InterviewSession {
   rounds: InterviewRound[];
+}
+
+/** What a candidate saved on a `dsa` round's `submission` Json column. */
+export interface RoundSubmission {
+  code: string;
+  language: string;
+  submitted_at: string;
 }
 
 /** Full user row, including the password hash. Never send this to a client. */

@@ -176,10 +176,10 @@ Every interview ever scheduled for this candidate, newest first.
 ### `POST /jobs/:id/candidates/:candidateId/interviews`
 Auth required, role: `hiring_manager` only, and the job must belong to their own company.
 Creates the session and its three rounds (`dsa`, `vscode`, `technical_ai`, in that order)
-together, atomically. Only scheduling exists so far, the rounds themselves (the actual DSA
-editor, VSCode sandbox, and AI technical interview) aren't implemented yet, each round is
-created with `status: pending` and nothing else. A candidate can only be scheduled once,
-`candidate_id` is unique on `interview_sessions`, a second attempt 409s.
+together, atomically, each with a fresh unguessable `access_token` on the session. Only the
+`dsa` round is implemented so far (the VSCode sandbox and AI technical interview aren't yet),
+each round is created with `status: pending` and nothing else. A candidate can only be
+scheduled once, `candidate_id` is unique on `interview_sessions`, a second attempt 409s.
 ```json
 // request
 { "scheduled_at": "string (ISO 8601 datetime)" }
@@ -187,6 +187,45 @@ created with `status: pending` and nothing else. A candidate can only be schedul
 { "data": InterviewSessionWithRounds, "message": "interview scheduled" }
 // response 409 (candidate already has an interview scheduled)
 { "success": false, "error": { "code": 409, "message": "This candidate already has an interview scheduled" } }
+```
+
+### The candidate portal (no auth)
+Everything under `/portal/:token` is deliberately unauthenticated: a candidate never gets a
+login, the `access_token` on their `InterviewSession` (returned to the hiring manager in the
+two endpoints above, in the `access_token` field) is the only gate. Share it as
+`https://<web-frontend>/interview/:token`. Anyone holding the token can view and submit that
+one candidate's rounds, nothing else, there's no cross-session or cross-candidate access.
+
+### `GET /portal/:token`
+No auth. The portal landing page's data: who this is for and every round's status. 404s if
+the token doesn't match any session.
+```json
+// response 200
+{ "data": { "candidate_name": "string", "job_title": "string", "status": "scheduled | completed | cancelled", "rounds": [{ "id": "uuid", "round_type": "dsa | vscode | technical_ai", "sequence": "number", "status": "pending | completed" }] }, "message": "interview portal" }
+```
+
+### `GET /portal/:token/dsa`
+No auth. The DSA round's question and current state. The question is picked at random from
+the global `Question` pool the first time this is called for a given round, then fixed for
+the rest of that round (calling this again never reassigns it). 404s for an unknown token,
+503s if the question pool is empty (shouldn't happen once seeded, see `seed:questions`).
+```json
+// response 200
+{ "data": { "round": { "id": "uuid", "status": "pending | completed", "submission": { "code": "string", "language": "string", "submitted_at": "date" } } }, "question": { "id": "uuid", "title": "string", "prompt": "string", "difficulty": "easy | medium | hard", "tags": "string[] (topic tags, e.g. \"arrays\", not company tags)", "starter_code": { "javascript": "string", "python": "string", "...": "one key per supported language" } } }
+```
+
+### `POST /portal/:token/dsa/submit`
+No auth. Locks in the candidate's final code and marks the round `completed`. One-shot: a
+round that's already `completed` 409s instead of overwriting the earlier submission. No
+auto-grading, a hiring manager reads the submitted code directly (see the candidate detail
+page on web-frontend, once that's wired up to show it).
+```json
+// request
+{ "code": "string", "language": "string" }
+// response 200
+{ "data": InterviewRound, "message": "dsa round submitted" }
+// response 409 (already submitted)
+{ "success": false, "error": { "code": 409, "message": "This round has already been submitted" } }
 ```
 
 ## Shapes
@@ -242,14 +281,16 @@ only come from reading the PDF directly, not from `extractFromText`.
 }
 ```
 
-**InterviewSessionWithRounds**:
+**InterviewSessionWithRounds**: `access_token` is the candidate portal link's token (see
+"The candidate portal" above), only ever meaningful to the hiring manager who needs to send
+it, never rotated. A round's `submission` is only set once a candidate submits that round.
 ```json
-{ "id": "uuid", "job_id": "uuid", "candidate_id": "uuid", "scheduled_at": "date", "status": "scheduled | completed | cancelled", "created_at": "date", "rounds": [{ "id": "uuid", "round_type": "dsa | vscode | technical_ai", "sequence": "number", "status": "pending | completed", "created_at": "date" }] }
+{ "id": "uuid", "job_id": "uuid", "candidate_id": "uuid", "access_token": "uuid", "scheduled_at": "date", "status": "scheduled | completed | cancelled", "created_at": "date", "rounds": [{ "id": "uuid", "round_type": "dsa | vscode | technical_ai", "sequence": "number", "status": "pending | completed", "submission": "{ code, language, submitted_at } | null", "created_at": "date" }] }
 ```
 
 ## Database
 
-One Postgres database (Supabase), this repo owns seven tables. See `prisma/schema.prisma` for
+One Postgres database (Supabase), this repo owns eight tables. See `prisma/schema.prisma` for
 the exact source of truth, this is the relationship summary.
 
 ```
@@ -264,6 +305,7 @@ Job       (1) ----< (many) InterviewSession
 Candidate (1) ----( 0 or 1 ) InterviewSession        (a candidate can only be scheduled once)
 User      (1) ----< (many) InterviewSession          (created_by)
 InterviewSession (1) ----< (exactly 3) InterviewRound
+Question  (1) ----< (many) InterviewRound            (only dsa rounds have one assigned)
 ```
 
 - **Company**: `id, name (unique), created_at`. A tenant.
@@ -271,5 +313,6 @@ InterviewSession (1) ----< (exactly 3) InterviewRound
 - **Job**: `id, company_id (FK), title, description, created_by (FK), created_at`. Only a hiring manager creates these.
 - **Candidate**: `id, job_id (FK), full_name, email (nullable), resume_file_name, resume_key, created_by (FK), created_at`. One row per uploaded resume. `resume_key` is the S3 object key, the file itself never touches Postgres. `full_name`/`email` come from the resume parser when it finds them, otherwise `full_name` falls back to the file name and `email` stays null.
 - **CandidateProfile**: `id, candidate_id (FK, unique), phone (nullable), summary (nullable), skills (JSON array of `{ category, items }`), experience (JSON array of `{ role, company, years, bullets }`), education (same shape as experience), sections (JSON array of `{ heading, entries: { title, bullets }[] }`, everything else the resume had), links (JSON array of `{ label, url }`, every PDF hyperlink found), created_at`. What the resume parser found beyond name and email, one row per candidate, created (possibly empty) at upload time regardless of whether the parse fully succeeded.
-- **InterviewSession**: `id, job_id (FK), candidate_id (FK, unique), scheduled_at, status, created_by (FK), created_at`. At most one row per candidate, scheduling a second one 409s.
-- **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai), sequence, status, created_at`. Always exactly three per session, created alongside it. No round has anything beyond `status: pending` yet, running the actual rounds isn't implemented in this service.
+- **InterviewSession**: `id, job_id (FK), candidate_id (FK, unique), access_token (unique), scheduled_at, status, created_by (FK), created_at`. At most one row per candidate, scheduling a second one 409s. `access_token` is generated once at creation and never rotated, it's the whole candidate portal's login-free access key.
+- **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai), sequence, status, question_id (FK to Question, nullable), submission (JSON `{ code, language, submitted_at }`, nullable), created_at`. Always exactly three per session, created alongside it. Only `dsa` is implemented so far: `question_id` is set the first time the candidate opens that round (random pick from `Question`, then fixed), `submission` is set once they submit it, which also flips `status` to `completed`.
+- **Question**: `id, title, prompt, difficulty (easy | medium | hard), tags (string array, topic tags like "arrays"/"dynamic-programming", not company tags, this platform doesn't do company-specific sets), starter_code (JSON, one key per supported language), created_at`. A global pool of original questions (not scraped from LeetCode or any other source), seeded via `npm run seed:questions`, not yet authored per-job or picked by JD relevance.
