@@ -93,7 +93,10 @@ invite link or separate accept-password step.
 ## Seeding DSA questions
 
 The `dsa` round picks a question at random from the `questions` table. Seed the starter pool
-(currently 3 questions, skips if any already exist):
+(currently 39 original questions, written from scratch, not scraped from LeetCode or any
+other source, across arrays/strings/hash-map/two-pointers/sliding-window/stack/binary-search/
+sorting/dynamic-programming/backtracking/greedy/graphs/trees/matrix/bit-manipulation/math,
+each tagged by topic, not company; skips if any already exist):
 
 ```bash
 npm run seed:questions

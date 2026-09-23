@@ -242,6 +242,218 @@ const QUESTIONS: SeedQuestion[] = [
     tags: ["bit-manipulation", "math"],
     starter_code: starterCode("Read the integer, print how many bits in its binary form are 1"),
   },
+  {
+    title: "Longest Increasing Subsequence",
+    prompt:
+      "Given an array of integers, find the length of the longest strictly increasing subsequence (elements " +
+      "don't need to be contiguous, just in increasing order and in their original relative order).\n\n" +
+      "Read the array (space-separated) from stdin, print that length.\n\n" +
+      "Example\nInput:\n10 9 2 5 3 7 101 18\nOutput:\n4",
+    difficulty: "medium",
+    tags: ["dynamic-programming", "arrays"],
+    starter_code: starterCode("Read the array, print the length of the longest increasing subsequence"),
+  },
+  {
+    title: "Edit Distance",
+    prompt:
+      "Given two strings, find the minimum number of single-character insertions, deletions, or substitutions " +
+      "needed to turn the first string into the second.\n\n" +
+      "Read two lines from stdin, print the minimum number of operations.\n\n" +
+      "Example\nInput:\ncat\ncut\nOutput:\n1",
+    difficulty: "hard",
+    tags: ["dynamic-programming", "strings"],
+    starter_code: starterCode("Read two lines, print the minimum edit distance between them"),
+  },
+  {
+    title: "0/1 Knapsack",
+    prompt:
+      "You have a knapsack with a weight capacity and a list of items, each with a weight and a value. Each " +
+      "item can be taken at most once. Maximize the total value without exceeding the capacity.\n\n" +
+      "Read the item count `n` and capacity on the first line, then `n` lines of `weight value`, print the " +
+      "maximum achievable value.\n\n" +
+      "Example\nInput:\n3 50\n10 60\n20 100\n30 120\nOutput:\n220",
+    difficulty: "hard",
+    tags: ["dynamic-programming"],
+    starter_code: starterCode("Read the items and capacity, print the maximum value that fits"),
+  },
+  {
+    title: "Next Greater Element",
+    prompt:
+      "Given an array, for each element find the next element to its right that's strictly greater than it, " +
+      "or `-1` if none exists.\n\n" +
+      "Read the array (space-separated) from stdin, print the result array, space-separated.\n\n" +
+      "Example\nInput:\n4 5 2 10 8\nOutput:\n5 10 10 -1 -1",
+    difficulty: "medium",
+    tags: ["stack", "arrays"],
+    starter_code: starterCode("Read the array, print each element's next greater element or -1"),
+  },
+  {
+    title: "Tree Height",
+    prompt:
+      "A tree with `n` nodes, numbered `1` to `n`, rooted at node `1`, is described by `n - 1` parent-child " +
+      "edges. Find its height: the number of edges on the longest path from the root to any leaf.\n\n" +
+      "Read `n` on the first line, then `n - 1` lines of `parent child`, print the height.\n\n" +
+      "Example\nInput:\n6\n1 2\n1 3\n2 4\n2 5\n3 6\nOutput:\n2",
+    difficulty: "medium",
+    tags: ["trees", "recursion"],
+    starter_code: starterCode("Read the tree's edges, print its height in edges"),
+  },
+  {
+    title: "Kth Smallest Element",
+    prompt:
+      "Given an array of integers and an integer `k`, find the kth smallest element (1st smallest is the " +
+      "minimum).\n\n" +
+      "Read the array on line one (space-separated), `k` on line two, print the kth smallest value.\n\n" +
+      "Example\nInput:\n7 10 4 3 20 15\n3\nOutput:\n7",
+    difficulty: "easy",
+    tags: ["arrays", "sorting"],
+    starter_code: starterCode("Read the array and k, print the kth smallest element"),
+  },
+  {
+    title: "Word Break",
+    prompt:
+      "Given a string and a dictionary of words, determine whether the string can be fully split into a " +
+      "sequence of one or more dictionary words (words may be reused).\n\n" +
+      "Read the string on line one, the dictionary (space-separated) on line two, print `true` or `false`.\n\n" +
+      "Example\nInput:\npineapple\npine apple\nOutput:\ntrue",
+    difficulty: "hard",
+    tags: ["dynamic-programming", "strings"],
+    starter_code: starterCode("Read the string and dictionary, print whether it can be segmented"),
+  },
+  {
+    title: "Count Subsets With a Given Sum",
+    prompt:
+      "Given an array of positive integers and a target sum, count how many subsets (by position, so " +
+      "duplicate values at different positions count separately) add up exactly to the target.\n\n" +
+      "Read the array on line one (space-separated), the target on line two, print the count.\n\n" +
+      "Example\nInput:\n1 2 3 3\n6\nOutput:\n3",
+    difficulty: "hard",
+    tags: ["dynamic-programming", "backtracking"],
+    starter_code: starterCode("Read the array and target, print how many subsets sum to it"),
+  },
+  {
+    title: "Combination Sum Count",
+    prompt:
+      "Given an array of distinct positive integers and a target, count how many unique combinations of them " +
+      "(each number reusable any number of times, order doesn't matter) add up exactly to the target.\n\n" +
+      "Read the array on line one (space-separated), the target on line two, print the count.\n\n" +
+      "Example\nInput:\n2 3 6 7\n7\nOutput:\n2",
+    difficulty: "hard",
+    tags: ["backtracking", "recursion"],
+    starter_code: starterCode("Read the array and target, print how many combinations (reuse allowed) sum to it"),
+  },
+  {
+    title: "Spiral Matrix Order",
+    prompt:
+      "Given a matrix, return all of its elements in spiral order, starting from the top-left and moving " +
+      "clockwise, spiraling inward.\n\n" +
+      "Read the row and column counts on the first line, then that many rows of space-separated values, print " +
+      "the elements in spiral order, space-separated.\n\n" +
+      "Example\nInput:\n3 3\n1 2 3\n4 5 6\n7 8 9\nOutput:\n1 2 3 6 9 8 7 4 5",
+    difficulty: "medium",
+    tags: ["matrix", "arrays"],
+    starter_code: starterCode("Read the matrix, print its elements in clockwise spiral order"),
+  },
+  {
+    title: "Rotate Matrix 90 Degrees",
+    prompt:
+      "Given an `n x n` matrix, rotate it 90 degrees clockwise, in place conceptually (you can build a new one).\n\n" +
+      "Read `n` on the first line, then `n` rows of space-separated values, print the rotated matrix, one row " +
+      "per line.\n\n" +
+      "Example\nInput:\n2\n1 2\n3 4\nOutput:\n3 1\n4 2",
+    difficulty: "medium",
+    tags: ["matrix"],
+    starter_code: starterCode("Read the matrix, print it rotated 90 degrees clockwise"),
+  },
+  {
+    title: "Find the Duplicate Number",
+    prompt:
+      "You're given `n + 1` integers, each in the range `1` to `n`, with exactly one value repeated (possibly " +
+      "more than once). Find that repeated value.\n\n" +
+      "Read the integers (space-separated) from stdin, print the duplicate.\n\n" +
+      "Example\nInput:\n1 3 4 2 2\nOutput:\n2",
+    difficulty: "medium",
+    tags: ["arrays", "two-pointers"],
+    starter_code: starterCode("Read the integers, print the one that repeats"),
+  },
+  {
+    title: "Container With Most Water",
+    prompt:
+      "Given an array of non-negative heights, where each represents a vertical line at that index, find two " +
+      "lines that together with the x-axis form a container holding the most water. Print the maximum area.\n\n" +
+      "Read the heights (space-separated) from stdin, print the maximum area.\n\n" +
+      "Example\nInput:\n1 2 4 3\nOutput:\n4",
+    difficulty: "medium",
+    tags: ["arrays", "two-pointers"],
+    starter_code: starterCode("Read the heights, print the maximum container area"),
+  },
+  {
+    title: "Trapping Rain Water",
+    prompt:
+      "Given an array of non-negative heights representing an elevation map, compute how much rainwater it " +
+      "can trap between the bars after it rains.\n\n" +
+      "Read the heights (space-separated) from stdin, print the total trapped water.\n\n" +
+      "Example\nInput:\n3 0 2 0 4\nOutput:\n7",
+    difficulty: "hard",
+    tags: ["arrays", "two-pointers", "stack"],
+    starter_code: starterCode("Read the heights, print the total trapped rainwater"),
+  },
+  {
+    title: "Course Schedule",
+    prompt:
+      "There are `n` courses numbered `0` to `n - 1` and a list of prerequisite pairs `a b`, meaning course " +
+      "`a` requires course `b` to be completed first. Determine whether it's possible to finish all courses " +
+      "(i.e. there's no cycle in the prerequisites).\n\n" +
+      "Read `n` on line one, the number of prerequisite pairs `m` on line two, then `m` lines of `a b`, print " +
+      "`true` or `false`.\n\n" +
+      "Example\nInput:\n4\n3\n1 0\n2 1\n3 2\nOutput:\ntrue",
+    difficulty: "hard",
+    tags: ["graphs"],
+    starter_code: starterCode("Read the courses and prerequisites, print whether all can be completed"),
+  },
+  {
+    title: "Shortest Path in an Unweighted Graph",
+    prompt:
+      "Given an undirected, unweighted graph and two nodes, find the length (number of edges) of the shortest " +
+      "path between them, or `-1` if they aren't connected.\n\n" +
+      "Read `n` (nodes) and `m` (edges) on the first line, then `m` lines of `u v`, then a line with the " +
+      "source and destination, print the shortest path length.\n\n" +
+      "Example\nInput:\n5 5\n0 1\n1 2\n2 3\n3 4\n0 4\n0 3\nOutput:\n2",
+    difficulty: "medium",
+    tags: ["graphs"],
+    starter_code: starterCode("Read the graph and the two nodes, print the shortest path length via BFS"),
+  },
+  {
+    title: "GCD and LCM",
+    prompt:
+      "Given two positive integers, find their greatest common divisor and least common multiple.\n\n" +
+      "Read two integers (space-separated) from stdin, print the GCD and LCM, space-separated.\n\n" +
+      "Example\nInput:\n12 18\nOutput:\n6 36",
+    difficulty: "easy",
+    tags: ["math"],
+    starter_code: starterCode("Read two integers, print their GCD and LCM"),
+  },
+  {
+    title: "Count Primes",
+    prompt:
+      "Given a non-negative integer `n`, count how many prime numbers are less than or equal to `n`.\n\n" +
+      "Read `n` from stdin, print that count.\n\n" +
+      "Example\nInput:\n10\nOutput:\n4",
+    difficulty: "easy",
+    tags: ["math"],
+    starter_code: starterCode("Read n, print how many primes are <= n"),
+  },
+  {
+    title: "Single Number",
+    prompt:
+      "Given an array where every element appears exactly twice except for one, which appears exactly once, " +
+      "find that single element. Aim for an approach that doesn't use extra space for counting.\n\n" +
+      "Read the array (space-separated) from stdin, print the single element.\n\n" +
+      "Example\nInput:\n4 1 2 1 2\nOutput:\n4",
+    difficulty: "easy",
+    tags: ["bit-manipulation", "arrays"],
+    starter_code: starterCode("Read the array, print the element that doesn't have a pair"),
+  },
 ];
 
 async function main() {
