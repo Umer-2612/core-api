@@ -31,15 +31,90 @@ function loadGeneratedTestCases(): Record<string, GeneratedTestCase[]> {
   return JSON.parse(readFileSync(path, "utf-8")) as Record<string, GeneratedTestCase[]>;
 }
 
-/** All starter code is just a same-shaped "read this, print that" reminder per language,
- * not real boilerplate, the candidate writes the whole program. One instruction line per
- * question instead of repeating four near-identical comments by hand each time. */
+/** Real, runnable starter code per language: stdin is already read into `lines`
+ * before the candidate's code runs, and the whole thing compiles and echoes the
+ * input straight back out of the box, so hitting Run before writing anything
+ * still works, it just isn't the right answer yet. One instruction line per
+ * question, embedded as the comment marking where to write the real logic,
+ * instead of hand-writing six near-identical scaffolds every time. */
 function starterCode(instruction: string): Record<string, string> {
   return {
-    javascript: `// ${instruction}\n`,
-    python: `# ${instruction}\n`,
-    java: `// ${instruction}\npublic class Main {\n    public static void main(String[] args) {\n\n    }\n}\n`,
-    cpp: `// ${instruction}\n#include <iostream>\nusing namespace std;\n\nint main() {\n\n    return 0;\n}\n`,
+    javascript: `const lines = require("fs").readFileSync(0, "utf-8").split("\\n");
+
+// ${instruction}
+console.log(lines.join("\\n"));
+`,
+    python: `import sys
+
+lines = sys.stdin.read().split("\\n")
+
+# ${instruction}
+print("\\n".join(lines))
+`,
+    java: `import java.io.*;
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        List<String> lines = new ArrayList<>();
+        String line;
+        while ((line = br.readLine()) != null) lines.add(line);
+
+        // ${instruction}
+        System.out.println(String.join("\\n", lines));
+    }
+}
+`,
+    cpp: `#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+int main() {
+    vector<string> lines;
+    string line;
+    while (getline(cin, line)) lines.push_back(line);
+
+    // ${instruction}
+    for (auto& l : lines) cout << l << "\\n";
+    return 0;
+}
+`,
+    c: `#include <stdio.h>
+#include <string.h>
+
+int main() {
+    char line[4096];
+
+    // ${instruction}
+    while (fgets(line, sizeof(line), stdin)) {
+        printf("%s", line);
+    }
+    return 0;
+}
+`,
+    go: `package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
+
+func main() {
+	scanner := bufio.NewScanner(os.Stdin)
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	// ${instruction}
+	for _, l := range lines {
+		fmt.Println(l)
+	}
+}
+`,
   };
 }
 

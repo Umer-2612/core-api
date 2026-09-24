@@ -251,21 +251,25 @@ custom input" does), but saves nothing, the candidate can call this as many time
 like. 400s if the round hasn't been started yet (`POST .../dsa/start` first) or the language
 isn't supported, 404s if `questionId` isn't one of this round's two questions. Locked test
 cases only ever report `passed`, never their input/expected/actual output.
+
+**Not a normal JSON response**: this streams one NDJSON line per test case as it finishes
+grading (`Content-Type: application/x-ndjson`), rather than making the candidate wait for all
+15-20 cases before seeing anything. A validation failure before any case has run (bad token,
+round not started, unsupported language, ...) still comes back as the usual `{ "success":
+false, "error": {...} }` JSON with the matching status code, since nothing's been streamed yet
+at that point. Once the first line has gone out, a failure partway through (judge-service
+dies mid-run) can't fall back to that either, so it's reported as its own `"type": "error"`
+line instead and the stream just ends, HTTP status stays 200 throughout, read the line types.
 ```json
 // request
 { "code": "string", "language": "string" }
-// response 200
-{
-  "data": {
-    "passed": "number",
-    "total": "number",
-    "results": [
-      { "locked": false, "passed": "boolean", "input": "string", "expected_output": "string", "actual_output": "string" },
-      { "locked": true, "passed": "boolean" }
-    ]
-  },
-  "message": "test run"
-}
+// response 200, streamed, one JSON object per line:
+{ "type": "result", "index": 0, "result": { "locked": false, "passed": true, "input": "string", "expected_output": "string", "actual_output": "string" } }
+{ "type": "result", "index": 1, "result": { "locked": true, "passed": false } }
+// ...one "result" line per test case...
+{ "type": "done", "passed": "number", "total": "number" }
+// or, if grading fails partway through:
+{ "type": "error", "message": "string" }
 ```
 
 ### `POST /portal/:token/dsa/questions/:questionId/submit`
