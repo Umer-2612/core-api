@@ -128,7 +128,156 @@ const QUESTIONS: SeedQuestion[] = [
       "Example\nInput:\n2 7 11 15\n9\nOutput:\n0 1",
     difficulty: "easy",
     tags: ["arrays", "hash-map"],
-    starter_code: starterCode('Read nums from the first line, target from the second, print "i j"'),
+    starter_code: {
+      javascript: `/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+var twoSum = function(nums, target) {
+
+};
+
+// Do not edit below this line
+const lines = require("fs").readFileSync(0, "utf-8").split("\\n");
+const nums = lines[0].trim().split(/\\s+/).map(Number);
+const target = parseInt(lines[1], 10);
+console.log(twoSum(nums, target).join(" "));
+`,
+      python: `from typing import List
+
+class Solution:
+    def twoSum(self, nums: List[int], target: int) -> List[int]:
+        pass
+
+# Do not edit below this line
+import sys
+lines = sys.stdin.read().split("\\n")
+nums = list(map(int, lines[0].split()))
+target = int(lines[1])
+result = Solution().twoSum(nums, target)
+print(" ".join(map(str, result)))
+`,
+      java: `import java.io.*;
+import java.util.*;
+
+class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        return new int[]{};
+    }
+}
+
+// Do not edit below this line
+public class Main {
+    public static void main(String[] args) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        String[] numsStr = br.readLine().trim().split("\\\\s+");
+        int[] nums = new int[numsStr.length];
+        for (int i = 0; i < numsStr.length; i++) nums[i] = Integer.parseInt(numsStr[i]);
+        int target = Integer.parseInt(br.readLine().trim());
+        int[] result = new Solution().twoSum(nums, target);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < result.length; i++) {
+            if (i > 0) sb.append(" ");
+            sb.append(result[i]);
+        }
+        System.out.println(sb.toString());
+    }
+}
+`,
+      cpp: `#include <iostream>
+#include <vector>
+#include <sstream>
+#include <unordered_map>
+using namespace std;
+
+class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        return {};
+    }
+};
+
+// Do not edit below this line
+int main() {
+    string line1, line2;
+    getline(cin, line1);
+    getline(cin, line2);
+    vector<int> nums;
+    stringstream ss(line1);
+    int x;
+    while (ss >> x) nums.push_back(x);
+    int target = stoi(line2);
+    vector<int> result = Solution().twoSum(nums, target);
+    for (size_t i = 0; i < result.size(); i++) {
+        if (i > 0) cout << " ";
+        cout << result[i];
+    }
+    cout << endl;
+    return 0;
+}
+`,
+      c: `#include <stdio.h>
+#include <stdlib.h>
+
+int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+    *returnSize = 0;
+    return NULL;
+}
+
+// Do not edit below this line
+int main() {
+    int nums[1000], numsSize = 0, target, n;
+    while (scanf("%d", &n) == 1) {
+        nums[numsSize++] = n;
+        int c = getchar();
+        if (c == '\\n' || c == EOF) break;
+    }
+    scanf("%d", &target);
+    int returnSize;
+    int* result = twoSum(nums, numsSize, target, &returnSize);
+    for (int i = 0; i < returnSize; i++) {
+        if (i > 0) printf(" ");
+        printf("%d", result[i]);
+    }
+    printf("\\n");
+    return 0;
+}
+`,
+      go: `package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+func twoSum(nums []int, target int) []int {
+    return nil
+}
+
+// Do not edit below this line
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+	line1, _ := reader.ReadString('\\n')
+	line2, _ := reader.ReadString('\\n')
+	fields := strings.Fields(line1)
+	nums := make([]int, len(fields))
+	for i, f := range fields {
+		nums[i], _ = strconv.Atoi(f)
+	}
+	target, _ := strconv.Atoi(strings.TrimSpace(line2))
+	result := twoSum(nums, target)
+	strs := make([]string, len(result))
+	for i, v := range result {
+		strs[i] = strconv.Itoa(v)
+	}
+	fmt.Println(strings.Join(strs, " "))
+}
+`,
+    },
   },
   {
     title: "Reverse Words in a String",
@@ -311,7 +460,132 @@ const QUESTIONS: SeedQuestion[] = [
       "Example\nInput:\n3 2 1 5 6 4\n2\nOutput:\n5",
     difficulty: "medium",
     tags: ["arrays", "sorting"],
-    starter_code: starterCode("Read the array and k, print the kth largest element"),
+    starter_code: {
+      javascript: `/**
+ * @param {number[]} nums
+ * @param {number} k
+ * @return {number}
+ */
+var findKthLargest = function(nums, k) {
+
+};
+
+// Do not edit below this line
+const lines = require("fs").readFileSync(0, "utf-8").split("\\n");
+const nums = lines[0].trim().split(/\\s+/).map(Number);
+const k = parseInt(lines[1], 10);
+console.log(findKthLargest(nums, k));
+`,
+      python: `from typing import List
+
+class Solution:
+    def findKthLargest(self, nums: List[int], k: int) -> int:
+        pass
+
+# Do not edit below this line
+import sys
+lines = sys.stdin.read().split("\\n")
+nums = list(map(int, lines[0].split()))
+k = int(lines[1])
+print(Solution().findKthLargest(nums, k))
+`,
+      java: `import java.io.*;
+import java.util.*;
+
+class Solution {
+    public int findKthLargest(int[] nums, int k) {
+        return 0;
+    }
+}
+
+// Do not edit below this line
+public class Main {
+    public static void main(String[] args) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        String[] numsStr = br.readLine().trim().split("\\\\s+");
+        int[] nums = new int[numsStr.length];
+        for (int i = 0; i < numsStr.length; i++) nums[i] = Integer.parseInt(numsStr[i]);
+        int k = Integer.parseInt(br.readLine().trim());
+        System.out.println(new Solution().findKthLargest(nums, k));
+    }
+}
+`,
+      cpp: `#include <iostream>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+using namespace std;
+
+class Solution {
+public:
+    int findKthLargest(vector<int>& nums, int k) {
+        return 0;
+    }
+};
+
+// Do not edit below this line
+int main() {
+    string line1, line2;
+    getline(cin, line1);
+    getline(cin, line2);
+    vector<int> nums;
+    stringstream ss(line1);
+    int x;
+    while (ss >> x) nums.push_back(x);
+    int k = stoi(line2);
+    cout << Solution().findKthLargest(nums, k) << endl;
+    return 0;
+}
+`,
+      c: `#include <stdio.h>
+#include <stdlib.h>
+
+int findKthLargest(int* nums, int numsSize, int k) {
+    return 0;
+}
+
+// Do not edit below this line
+int main() {
+    int nums[1000], numsSize = 0, k, n;
+    while (scanf("%d", &n) == 1) {
+        nums[numsSize++] = n;
+        int c = getchar();
+        if (c == '\\n' || c == EOF) break;
+    }
+    scanf("%d", &k);
+    printf("%d\\n", findKthLargest(nums, numsSize, k));
+    return 0;
+}
+`,
+      go: `package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+func findKthLargest(nums []int, k int) int {
+	return 0
+}
+
+// Do not edit below this line
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+	line1, _ := reader.ReadString('\\n')
+	line2, _ := reader.ReadString('\\n')
+	fields := strings.Fields(line1)
+	nums := make([]int, len(fields))
+	for i, f := range fields {
+		nums[i], _ = strconv.Atoi(f)
+	}
+	k, _ := strconv.Atoi(strings.TrimSpace(line2))
+	fmt.Println(findKthLargest(nums, k))
+}
+`,
+    },
   },
   {
     title: "Minimum Coins for an Amount",

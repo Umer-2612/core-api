@@ -46,7 +46,7 @@
       "locked": true
     },
     {
-      "input": "10 20 30 40 50\n70",
+      "input": "10 20 30 40 45\n70",
       "expected_output": "2 3\n",
       "locked": true
     },
@@ -71,7 +71,7 @@
       "locked": true
     },
     {
-      "input": "4 4 4 4\n8",
+      "input": "4 4 2 9\n8",
       "expected_output": "0 1\n",
       "locked": true
     },
