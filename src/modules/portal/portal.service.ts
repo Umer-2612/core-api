@@ -1,6 +1,6 @@
 import { container } from "tsyringe";
 import { DSA_ROUND_DURATION_MINUTES, JUDGE0_LANGUAGE_IDS, QUESTIONS_PER_DSA_ROUND } from "@modules/portal/dsa.constants";
-import type { GradeResult } from "@modules/portal/grading";
+import type { GradedTestCase, GradeResult } from "@modules/portal/grading";
 import { gradeSubmission } from "@modules/portal/grading";
 import type { IJudgeClient } from "@modules/portal/judge-client";
 import { JudgeClient } from "@modules/portal/judge-client";
@@ -155,11 +155,17 @@ export class PortalService {
   }
 
   /** A dry run against the question's test cases. Doesn't save anything, the candidate
-   * can do this as many times as they like before submitting. */
-  public async runDsaTests(token: string, questionId: string, data: RunDsaTestsDto): Promise<GradeResult> {
+   * can do this as many times as they like before submitting. `onResult`, if given, is
+   * called once per test case as it finishes, so the controller can stream progress. */
+  public async runDsaTests(
+    token: string,
+    questionId: string,
+    data: RunDsaTestsDto,
+    onResult?: (index: number, result: GradedTestCase) => void,
+  ): Promise<GradeResult> {
     const { testCases } = await this.getStartedRoundAndTestCases(token, questionId);
     const languageId = this.resolveLanguageId(data.language);
-    return gradeSubmission(testCases, languageId, data.code, this.judgeClient);
+    return gradeSubmission(testCases, languageId, data.code, this.judgeClient, onResult);
   }
 
   /** One-shot per question: 409s if this question was already submitted. Once every

@@ -91,4 +91,25 @@ describe("gradeSubmission", () => {
     expect(result.total).toBe(3);
     expect(result.passed).toBe(2);
   });
+
+  it("calls onResult once per test case, in order, as each one finishes", async () => {
+    const judge = new FakeJudgeClient({
+      a: { success: true, stdout: "1" },
+      b: { success: true, stdout: "wrong" },
+    });
+    const calls: { index: number; passed: boolean }[] = [];
+
+    await gradeSubmission(
+      [testCase({ input: "a", expected_output: "1" }), testCase({ input: "b", expected_output: "2" })],
+      71,
+      "code",
+      judge,
+      (index, result) => calls.push({ index, passed: result.passed }),
+    );
+
+    expect(calls).toEqual([
+      { index: 0, passed: true },
+      { index: 1, passed: false },
+    ]);
+  });
 });
