@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "CommonJS",
-    "moduleResolution": "node",
+    "moduleResolution": "node10",
     "lib": ["ES2022"],
     "outDir": "dist",
     "rootDir": "src",
@@ -13,11 +13,10 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "baseUrl": "src",
     "paths": {
-      "@modules/*": ["modules/*"],
-      "@shared/*": ["shared/*"],
-      "@/*": ["*"]
+      "@modules/*": ["./src/modules/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
