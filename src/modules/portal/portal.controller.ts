@@ -32,27 +32,42 @@ export class PortalController {
    * only sent once the first result is ready, so a validation failure (bad token,
    * round not started, ...) before any case has run still reaches the normal JSON
    * error middleware; a failure mid-stream (after headers are committed) can't use
-   * that path anymore, so it's reported as its own NDJSON line instead. */
+   * that path anymore, so it's reported as its own NDJSON line instead.
+   *
+   * If the candidate hits "Stop" (or just closes the tab), the connection closes
+   * before the response has properly ended, res's "close" event catches that and
+   * aborts grading rather than burning Judge0 calls nobody's listening for anymore. */
   public runDsaTests: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const token = req.params.token as string;
     const questionId = req.params.questionId as string;
     const dto = req.body as RunDsaTestsDto;
 
     let headersSent = false;
+    const controller = new AbortController();
+    res.on("close", () => {
+      if (!res.writableEnded) controller.abort();
+    });
 
     try {
-      const result = await this.portalService.runDsaTests(token, questionId, dto, (index, gradedResult) => {
-        if (!headersSent) {
-          headersSent = true;
-          res.writeHead(200, {
-            "Content-Type": "application/x-ndjson",
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-          });
-        }
-        res.write(`${JSON.stringify({ type: "result", index, result: gradedResult })}\n`);
-      });
+      const result = await this.portalService.runDsaTests(
+        token,
+        questionId,
+        dto,
+        (index, gradedResult) => {
+          if (!headersSent) {
+            headersSent = true;
+            res.writeHead(200, {
+              "Content-Type": "application/x-ndjson",
+              "Cache-Control": "no-cache",
+              "X-Accel-Buffering": "no",
+            });
+          }
+          res.write(`${JSON.stringify({ type: "result", index, result: gradedResult })}\n`);
+        },
+        controller.signal,
+      );
 
+      if (controller.signal.aborted) return;
       if (!headersSent) {
         res.writeHead(200, { "Content-Type": "application/x-ndjson" });
       }
@@ -60,6 +75,7 @@ export class PortalController {
       res.end();
     } catch (err) {
       if (!headersSent) throw err;
+      if (controller.signal.aborted) return;
       res.write(`${JSON.stringify({ type: "error", message: err instanceof Error ? err.message : "Grading failed" })}\n`);
       res.end();
     }
