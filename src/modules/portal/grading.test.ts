@@ -112,4 +112,32 @@ describe("gradeSubmission", () => {
       { index: 1, passed: false },
     ]);
   });
+
+  it("stops before the next test case once the signal is aborted", async () => {
+    const judge = new FakeJudgeClient({
+      a: { success: true, stdout: "1" },
+      b: { success: true, stdout: "2" },
+      c: { success: true, stdout: "3" },
+    });
+    const controller = new AbortController();
+    const calls: number[] = [];
+
+    await gradeSubmission(
+      [
+        testCase({ input: "a", expected_output: "1" }),
+        testCase({ input: "b", expected_output: "2" }),
+        testCase({ input: "c", expected_output: "3" }),
+      ],
+      71,
+      "code",
+      judge,
+      (index) => {
+        calls.push(index);
+        if (index === 0) controller.abort();
+      },
+      controller.signal,
+    );
+
+    expect(calls).toEqual([0]);
+  });
 });

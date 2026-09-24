@@ -24,18 +24,26 @@ export interface GradeResult {
  *
  * `onResult`, if given, is called once per test case as it finishes (index is
  * 0-based), so a caller can stream progress to a client instead of waiting for every
- * case to finish before reporting anything. */
+ * case to finish before reporting anything.
+ *
+ * `signal`, if given and already aborted (or aborted partway through), stops the loop
+ * before starting the next test case rather than burning Judge0 calls nobody's
+ * listening for anymore, e.g. once a candidate clicks "Stop" and the client
+ * disconnects. Whatever ran before that point is still returned, just marked as not
+ * covering every test case. */
 export async function gradeSubmission(
   testCases: TestCase[],
   languageId: number,
   code: string,
   judgeClient: IJudgeClient,
   onResult?: (index: number, result: GradedTestCase) => void,
+  signal?: AbortSignal,
 ): Promise<GradeResult> {
   const results: GradedTestCase[] = [];
   let passed = 0;
 
   for (let index = 0; index < testCases.length; index += 1) {
+    if (signal?.aborted) break;
     const testCase = testCases[index]!;
     const execution = await judgeClient.execute(languageId, code, testCase.input);
     const actual = (execution.stdout ?? "").trim();

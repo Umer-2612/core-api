@@ -156,16 +156,19 @@ export class PortalService {
 
   /** A dry run against the question's test cases. Doesn't save anything, the candidate
    * can do this as many times as they like before submitting. `onResult`, if given, is
-   * called once per test case as it finishes, so the controller can stream progress. */
+   * called once per test case as it finishes, so the controller can stream progress.
+   * `signal`, if given, stops grading early once aborted (the candidate hit "Stop" and
+   * disconnected), instead of burning Judge0 calls nobody's listening for anymore. */
   public async runDsaTests(
     token: string,
     questionId: string,
     data: RunDsaTestsDto,
     onResult?: (index: number, result: GradedTestCase) => void,
+    signal?: AbortSignal,
   ): Promise<GradeResult> {
     const { testCases } = await this.getStartedRoundAndTestCases(token, questionId);
     const languageId = this.resolveLanguageId(data.language);
-    return gradeSubmission(testCases, languageId, data.code, this.judgeClient, onResult);
+    return gradeSubmission(testCases, languageId, data.code, this.judgeClient, onResult, signal);
   }
 
   /** One-shot per question: 409s if this question was already submitted. Once every
