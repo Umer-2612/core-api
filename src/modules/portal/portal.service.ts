@@ -4,11 +4,12 @@ import type { GradedTestCase, GradeResult } from "@modules/portal/grading";
 import { gradeSubmission } from "@modules/portal/grading";
 import type { IJudgeClient } from "@modules/portal/judge-client";
 import { JudgeClient } from "@modules/portal/judge-client";
-import type { RunDsaTestsDto, SubmitDsaQuestionDto } from "@modules/portal/portal.dto";
+import type { ReportFocusLossDto, RunDsaTestsDto, SubmitDsaQuestionDto } from "@modules/portal/portal.dto";
 import type { IPortalRepository, PortalSession } from "@modules/portal/portal.repository";
 import { PortalRepository } from "@modules/portal/portal.repository";
 import { HttpException } from "@shared/exceptions/http.exception";
 import type {
+  FocusLossEvent,
   InterviewRound,
   InterviewRoundStatus,
   InterviewRoundType,
@@ -174,15 +175,23 @@ export class PortalService {
   /** One-shot per question: 409s if this question was already submitted. Once every
    * question in the round has a submission, the round itself flips to completed.
    * No server-side deadline enforcement yet, the client auto-submits at zero and this
-   * trusts that rather than rejecting a late request and losing the candidate's code. */
-  public async submitDsaQuestion(token: string, questionId: string, data: SubmitDsaQuestionDto): Promise<QuestionSubmission> {
+   * trusts that rather than rejecting a late request and losing the candidate's code.
+   * `onResult`, if given, is called once per test case as it finishes, same as
+   * `runDsaTests`, so the controller can stream progress instead of leaving the
+   * candidate staring at a button for the ~1s-per-case it takes to grade sequentially. */
+  public async submitDsaQuestion(
+    token: string,
+    questionId: string,
+    data: SubmitDsaQuestionDto,
+    onResult?: (index: number, result: GradedTestCase) => void,
+  ): Promise<QuestionSubmission> {
     const { round, testCases } = await this.getStartedRoundAndTestCases(token, questionId);
 
     const submissions = (round.submissions as Record<string, QuestionSubmission> | null) ?? {};
     if (submissions[questionId]) throw new HttpException(409, "This question has already been submitted");
 
     const languageId = this.resolveLanguageId(data.language);
-    const graded = await gradeSubmission(testCases, languageId, data.code, this.judgeClient);
+    const graded = await gradeSubmission(testCases, languageId, data.code, this.judgeClient, onResult);
 
     const submission: QuestionSubmission = {
       code: data.code,
@@ -191,10 +200,25 @@ export class PortalService {
       submitted_at: new Date().toISOString(),
     };
 
-    const nextSubmissions = { ...submissions, [questionId]: submission };
-    const complete = round.question_ids.every((id) => Boolean(nextSubmissions[id]));
-
-    await this.portalRepository.saveSubmission(round.id, nextSubmissions, complete);
+    const saved = await this.portalRepository.addSubmission(round.id, questionId, submission);
+    if (!saved) throw new HttpException(409, "This question has already been submitted");
     return submission;
+  }
+
+  /** Warn-and-log proctoring only: records one away period (tab/fullscreen lost focus,
+   * then came back) on the round, never blocks the candidate or changes grading. Returns
+   * the running count so the client can show "you've left N times" for transparency. */
+  public async reportFocusLoss(token: string, data: ReportFocusLossDto): Promise<{ count: number }> {
+    const session = await this.getSessionOrThrow(token);
+    const round = this.findRoundOrThrow(session, "dsa");
+
+    if (!round.started_at) throw new HttpException(400, "The round hasn't started yet");
+
+    const durationMs = Math.max(0, new Date(data.returned_at).getTime() - new Date(data.left_at).getTime());
+    const existing = (round.focus_loss_events as unknown as FocusLossEvent[] | null) ?? [];
+    const nextEvents = [...existing, { left_at: data.left_at, returned_at: data.returned_at, duration_ms: durationMs }];
+
+    await this.portalRepository.saveFocusLossEvents(round.id, nextEvents);
+    return { count: nextEvents.length };
   }
 }

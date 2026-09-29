@@ -65,6 +65,15 @@ export interface QuestionSubmission {
   submitted_at: string;
 }
 
+/** One entry in a `dsa` round's `focus_loss_events` Json column: the candidate's tab
+ * lost focus or fullscreen (alt-tab, minimize, switching apps) and later came back.
+ * Proctoring signal only, a hiring manager reads it, nothing here blocks the round. */
+export interface FocusLossEvent {
+  left_at: string;
+  returned_at: string;
+  duration_ms: number;
+}
+
 /** Full user row, including the password hash. Never send this to a client. */
 export type UserRecord = User;
 

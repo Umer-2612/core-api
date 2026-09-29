@@ -154,6 +154,11 @@ model InterviewRound {
   /// test_results: { passed, total }, submitted_at } }`. No auto-grading
   /// beyond the test-case pass/fail count, a hiring manager reads the code.
   submissions  Json?
+  /// Proctoring log for a `dsa` round: array of `{ left_at, returned_at,
+  /// duration_ms }`, one entry per time the candidate's tab lost focus or
+  /// fullscreen (alt-tab, minimize, switching apps) and came back. Warn +
+  /// log only, nothing here blocks the candidate or auto-fails the round.
+  focus_loss_events Json?
   created_at   DateTime             @default(now())
 
   session InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)

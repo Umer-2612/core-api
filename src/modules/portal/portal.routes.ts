@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { container, injectable } from "tsyringe";
-import { runDsaTestsSchema, submitDsaQuestionSchema } from "@modules/portal/portal.dto";
+import { reportFocusLossSchema, runDsaTestsSchema, submitDsaQuestionSchema } from "@modules/portal/portal.dto";
 import { PortalController } from "@modules/portal/portal.controller";
 import { ValidationMiddleware } from "@shared/middlewares/validation.middleware";
 import type { Routes } from "@shared/interfaces/routes.interface";
@@ -32,5 +32,6 @@ export class PortalRoute implements Routes {
       ValidationMiddleware(submitDsaQuestionSchema),
       this.portalController.submitDsaQuestion,
     );
+    this.router.post("/:token/dsa/focus-loss", ValidationMiddleware(reportFocusLossSchema), this.portalController.reportFocusLoss);
   }
 }

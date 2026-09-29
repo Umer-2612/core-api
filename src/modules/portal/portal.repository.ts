@@ -1,5 +1,5 @@
 import { toJsonValue } from "@modules/candidates/candidate-profile.repository";
-import type { InterviewRound, InterviewSession, Question, QuestionSubmission } from "@shared/interfaces/models.interface";
+import type { FocusLossEvent, InterviewRound, InterviewSession, Question, QuestionSubmission } from "@shared/interfaces/models.interface";
 import { prisma } from "@/db/prisma";
 
 /** A session as seen through the candidate portal: its rounds, plus just enough
@@ -20,11 +20,12 @@ export interface IPortalRepository {
   /** Idempotent at the service layer, not here: this always overwrites started_at,
    * callers only invoke it once they've confirmed the round hasn't started yet. */
   startRound(roundId: string): Promise<InterviewRound>;
-  saveSubmission(
-    roundId: string,
-    submissions: Record<string, QuestionSubmission>,
-    complete: boolean,
-  ): Promise<InterviewRound>;
+  /** Atomically records one question's submission against the round's current
+   * submissions (locking the row, so concurrent submits can't overwrite each other) and
+   * flips the round to completed once every assigned question has one. Returns null,
+   * writing nothing, if that question was already submitted. */
+  addSubmission(roundId: string, questionId: string, submission: QuestionSubmission): Promise<InterviewRound | null>;
+  saveFocusLossEvents(roundId: string, events: FocusLossEvent[]): Promise<InterviewRound>;
 }
 
 /** Data access for the token-based candidate portal. Reads/writes `interview_sessions`,
@@ -61,14 +62,27 @@ export class PortalRepository implements IPortalRepository {
     return prisma.interviewRound.update({ where: { id: roundId }, data: { started_at: new Date() } });
   }
 
-  async saveSubmission(
-    roundId: string,
-    submissions: Record<string, QuestionSubmission>,
-    complete: boolean,
-  ): Promise<InterviewRound> {
+  async addSubmission(roundId: string, questionId: string, submission: QuestionSubmission): Promise<InterviewRound | null> {
+    return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM interview_rounds WHERE id = ${roundId} FOR UPDATE`;
+      const round = await tx.interviewRound.findUniqueOrThrow({ where: { id: roundId } });
+
+      const existing = (round.submissions as Record<string, QuestionSubmission> | null) ?? {};
+      if (existing[questionId]) return null;
+
+      const next = { ...existing, [questionId]: submission };
+      const complete = round.question_ids.every((id) => Boolean(next[id]));
+      return tx.interviewRound.update({
+        where: { id: roundId },
+        data: { submissions: toJsonValue(next), status: complete ? "completed" : undefined },
+      });
+    });
+  }
+
+  async saveFocusLossEvents(roundId: string, events: FocusLossEvent[]): Promise<InterviewRound> {
     return prisma.interviewRound.update({
       where: { id: roundId },
-      data: { submissions: toJsonValue(submissions), status: complete ? "completed" : undefined },
+      data: { focus_loss_events: toJsonValue(events) },
     });
   }
 }

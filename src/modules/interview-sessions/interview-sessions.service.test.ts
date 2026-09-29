@@ -71,6 +71,7 @@ function makeSession(overrides: Partial<InterviewSessionWithRounds> = {}): Inter
         question_ids: [],
         started_at: null,
         submissions: null,
+        focus_loss_events: null,
         created_at: new Date(),
       },
       {
@@ -82,6 +83,7 @@ function makeSession(overrides: Partial<InterviewSessionWithRounds> = {}): Inter
         question_ids: [],
         started_at: null,
         submissions: null,
+        focus_loss_events: null,
         created_at: new Date(),
       },
       {
@@ -93,6 +95,7 @@ function makeSession(overrides: Partial<InterviewSessionWithRounds> = {}): Inter
         question_ids: [],
         started_at: null,
         submissions: null,
+        focus_loss_events: null,
         created_at: new Date(),
       },
     ],
