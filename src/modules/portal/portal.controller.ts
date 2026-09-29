@@ -1,6 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
 import { container, injectable } from "tsyringe";
-import type { RunDsaTestsDto, SubmitDsaQuestionDto } from "@modules/portal/portal.dto";
+import type { ReportFocusLossDto, RunDsaTestsDto, SubmitDsaQuestionDto } from "@modules/portal/portal.dto";
 import { PortalService } from "@modules/portal/portal.service";
 import { asyncHandler } from "@shared/utils/asyncHandler";
 
@@ -81,12 +81,46 @@ export class PortalController {
     }
   });
 
+  /** Streams progress the same way runDsaTests does. Deliberately has no abort-on-close
+   * wiring though: a submission is final and must finish grading and save even if the
+   * candidate's tab closes mid-stream (e.g. the timer-expiry auto-submit, where nobody's
+   * around to see it at all), unlike a Run Tests dry run that's safe to cut short. */
   public submitDsaQuestion: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const submission = await this.portalService.submitDsaQuestion(
-      req.params.token as string,
-      req.params.questionId as string,
-      req.body as SubmitDsaQuestionDto,
-    );
-    res.status(200).json({ data: submission, message: "question submitted" });
+    const token = req.params.token as string;
+    const questionId = req.params.questionId as string;
+    const dto = req.body as SubmitDsaQuestionDto;
+
+    let headersSent = false;
+    const streamAlive = () => !res.writableEnded && !res.destroyed;
+
+    const writeLine = (line: Record<string, unknown>) => {
+      if (!streamAlive()) return;
+      if (!headersSent) {
+        headersSent = true;
+        res.writeHead(200, {
+          "Content-Type": "application/x-ndjson",
+          "Cache-Control": "no-cache",
+          "X-Accel-Buffering": "no",
+        });
+      }
+      res.write(`${JSON.stringify(line)}\n`);
+    };
+
+    try {
+      const submission = await this.portalService.submitDsaQuestion(token, questionId, dto, (index, gradedResult) => {
+        writeLine({ type: "result", index, result: gradedResult });
+      });
+      writeLine({ type: "done", submission });
+      if (streamAlive()) res.end();
+    } catch (err) {
+      if (!headersSent) throw err;
+      writeLine({ type: "error", message: err instanceof Error ? err.message : "Submission failed" });
+      if (streamAlive()) res.end();
+    }
+  });
+
+  public reportFocusLoss: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const result = await this.portalService.reportFocusLoss(req.params.token as string, req.body as ReportFocusLossDto);
+    res.status(200).json({ data: result, message: "focus loss recorded" });
   });
 }

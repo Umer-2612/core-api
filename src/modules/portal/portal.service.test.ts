@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ExecuteResult, IJudgeClient } from "@modules/portal/judge-client";
 import type { IPortalRepository, PortalSession } from "@modules/portal/portal.repository";
 import { PortalService } from "@modules/portal/portal.service";
-import type { InterviewRound, Question, QuestionSubmission, TestCase } from "@shared/interfaces/models.interface";
+import type { FocusLossEvent, InterviewRound, Question, QuestionSubmission, TestCase } from "@shared/interfaces/models.interface";
 
 function makeTestCases(): TestCase[] {
   // expected_output === input for every case, so the FakeJudgeClient (an echo judge)
@@ -26,6 +26,7 @@ function makeRound(overrides: Partial<InterviewRound> = {}): InterviewRound {
     question_ids: [],
     started_at: null,
     submissions: null,
+    focus_loss_events: null,
     created_at: new Date(),
     ...overrides,
   };
@@ -102,10 +103,19 @@ class FakePortalRepository implements IPortalRepository {
     return round;
   }
 
-  async saveSubmission(roundId: string, submissions: Record<string, QuestionSubmission>, complete: boolean) {
+  async addSubmission(roundId: string, questionId: string, submission: QuestionSubmission) {
     const round = this.findRound(roundId);
-    round.submissions = submissions as unknown as InterviewRound["submissions"];
-    if (complete) round.status = "completed";
+    const existing = (round.submissions as unknown as Record<string, QuestionSubmission> | null) ?? {};
+    if (existing[questionId]) return null;
+    const next = { ...existing, [questionId]: submission };
+    round.submissions = next as unknown as InterviewRound["submissions"];
+    if (round.question_ids.every((id) => next[id])) round.status = "completed";
+    return round;
+  }
+
+  async saveFocusLossEvents(roundId: string, events: FocusLossEvent[]) {
+    const round = this.findRound(roundId);
+    round.focus_loss_events = events as unknown as InterviewRound["focus_loss_events"];
     return round;
   }
 }
@@ -187,6 +197,21 @@ describe("PortalService", () => {
   });
 
   describe("runDsaTests", () => {
+    it("keeps both submissions and completes the round when the last two arrive concurrently", async () => {
+      await service.getDsaRound("tok-abc");
+      await service.startDsaRound("tok-abc");
+      const [q1, q2] = repo.sessions[0]!.rounds[0]!.question_ids;
+
+      await Promise.all([
+        service.submitDsaQuestion("tok-abc", q1!, { code: "x", language: "python" }),
+        service.submitDsaQuestion("tok-abc", q2!, { code: "x", language: "python" }),
+      ]);
+
+      const round = repo.sessions[0]!.rounds[0]!;
+      expect(Object.keys(round.submissions as object).sort()).toEqual([q1!, q2!].sort());
+      expect(round.status).toBe("completed");
+    });
+
     it("400s if the round hasn't started yet", async () => {
       await service.getDsaRound("tok-abc");
       const questionId = repo.sessions[0]!.rounds[0]!.question_ids[0]!;
@@ -262,6 +287,48 @@ describe("PortalService", () => {
       const questionId = repo.sessions[0]!.rounds[0]!.question_ids[0]!;
       await expect(
         service.submitDsaQuestion("tok-abc", questionId, { code: "x", language: "python" }),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+
+    it("calls onResult once per test case as grading progresses", async () => {
+      await service.getDsaRound("tok-abc");
+      await service.startDsaRound("tok-abc");
+      const questionId = repo.sessions[0]!.rounds[0]!.question_ids[0]!;
+
+      const calls: number[] = [];
+      await service.submitDsaQuestion("tok-abc", questionId, { code: "x", language: "python" }, (index) => {
+        calls.push(index);
+      });
+
+      expect(calls).toEqual([0, 1, 2, 3, 4]);
+    });
+  });
+
+  describe("reportFocusLoss", () => {
+    it("appends an event and returns the running count", async () => {
+      await service.getDsaRound("tok-abc");
+      await service.startDsaRound("tok-abc");
+
+      const first = await service.reportFocusLoss("tok-abc", {
+        left_at: "2026-03-01T09:05:00.000Z",
+        returned_at: "2026-03-01T09:05:10.000Z",
+      });
+      expect(first.count).toBe(1);
+
+      const second = await service.reportFocusLoss("tok-abc", {
+        left_at: "2026-03-01T09:06:00.000Z",
+        returned_at: "2026-03-01T09:06:03.000Z",
+      });
+      expect(second.count).toBe(2);
+
+      const events = repo.sessions[0]!.rounds[0]!.focus_loss_events as unknown as { duration_ms: number }[];
+      expect(events.map((e) => e.duration_ms)).toEqual([10000, 3000]);
+    });
+
+    it("400s if the round hasn't started yet", async () => {
+      await service.getDsaRound("tok-abc");
+      await expect(
+        service.reportFocusLoss("tok-abc", { left_at: "2026-03-01T09:05:00.000Z", returned_at: "2026-03-01T09:05:10.000Z" }),
       ).rejects.toMatchObject({ status: 400 });
     });
   });
