@@ -2,6 +2,7 @@ import { z } from "zod";
 import { CATALOG } from "@modules/portal/system-design/catalog";
 import type { Board, ProblemRequirements, Scenario, SimulationResult } from "@modules/portal/system-design/types";
 import { LlmUnavailableError, type ILlmClient } from "@shared/llm/llm-client";
+import { logger } from "@shared/utils/logger";
 
 const clampScore = (n: number) => Math.min(10, Math.max(1, Math.round(n)));
 const score = z.number().transform(clampScore);
@@ -101,7 +102,11 @@ export class SystemDesignAi {
     try {
       return await run();
     } catch (err) {
-      if (err instanceof LlmUnavailableError) return null;
+      if (err instanceof LlmUnavailableError) {
+        // Not fatal (the engine result stands on its own) but worth seeing: a retired model or a bad key looks identical to "no AI" otherwise.
+        logger.warn(`System design AI unavailable: ${err.message}`);
+        return null;
+      }
       throw err;
     }
   }

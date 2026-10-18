@@ -50,7 +50,7 @@ const EnvSchema = z
     // the simulation still runs, it just has no AI commentary. Groq's API is OpenAI-compatible,
     // so swapping provider later is a new ILlmClient, not a rewrite.
     GROQ_API_KEY: z.string().min(1).optional(),
-    LLM_MODEL: z.string().min(1).default("llama-3.3-70b-versatile"),
+    LLM_MODEL: z.string().min(1).default("openai/gpt-oss-120b"),
     LLM_BASE_URL: z.string().min(1).default("https://api.groq.com/openai/v1"),
   })
   .strip();
