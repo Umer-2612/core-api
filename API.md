@@ -175,14 +175,14 @@ Every interview ever scheduled for this candidate, newest first.
 
 ### `POST /jobs/:id/candidates/:candidateId/interviews`
 Auth required, role: `hiring_manager` only, and the job must belong to their own company.
-Creates the session and its three rounds (`dsa`, `vscode`, `technical_ai`, in that order)
-together, atomically, each with a fresh unguessable `access_token` on the session. Only the
+Creates the session and its three rounds (`dsa`, `vscode`, `technical_ai`, in that order), plus
+a fourth `system_design` round when `system_design_problem_id` is given, together, atomically, each with a fresh unguessable `access_token` on the session. Only the
 `dsa` round is implemented so far (the VSCode sandbox and AI technical interview aren't yet),
 each round is created with `status: pending` and nothing else. A candidate can only be
 scheduled once, `candidate_id` is unique on `interview_sessions`, a second attempt 409s.
 ```json
 // request
-{ "scheduled_at": "string (ISO 8601 datetime)" }
+{ "scheduled_at": "string (ISO 8601 datetime)", "system_design_problem_id": "uuid (optional, a preset or your company's own problem)" }
 // response 201
 { "data": InterviewSessionWithRounds, "message": "interview scheduled" }
 // response 409 (candidate already has an interview scheduled)
@@ -290,11 +290,113 @@ rejecting a submission that arrives a little late and losing the candidate's cod
 { "success": false, "error": { "code": 409, "message": "This question has already been submitted" } }
 ```
 
+### System design problems
+Auth required. The problem bank for the `system_design` round. `company_id: null` rows are global
+**presets** (seeded with `npm run seed:system-design`, read-only for everyone); the rest belong to
+the hiring manager's company. A `requirements` object is the load the candidate's design is
+simulated against:
+```json
+{ "target_rps": "number > 0", "read_ratio": "0..1", "peak_multiplier": "1..100", "data_size_gb": "number", "latency_slo_ms": "number > 0", "availability_slo": "50..100 (percent)" }
+```
+
+### `GET /system-design-problems`
+Role: `super_admin` or `hiring_manager`. Presets plus the caller's own company's problems (a
+`super_admin` sees every company's).
+```json
+// response 200
+{ "data": SystemDesignProblem[], "message": "system design problems" }
+```
+
+### `POST /system-design-problems`
+Role: `hiring_manager` only. Owned by the caller's company.
+```json
+// request
+{ "title": "string (max 200)", "prompt": "string (markdown, max 8000)", "difficulty": "easy | medium | hard", "requirements": { ... } }
+// response 201
+{ "data": SystemDesignProblem, "message": "system design problem created" }
+```
+
+### `GET /system-design-problems/:id`, `PATCH /system-design-problems/:id`, `DELETE /system-design-problems/:id`
+`GET`: role `super_admin` or `hiring_manager`; 404 if missing, 403 if another company's.
+`PATCH` (any subset of the create fields) and `DELETE`: role `hiring_manager` only, own company's
+problems only; presets 403 (read-only). `PATCH` 409s once a candidate has **started** an interview
+using the problem (the prompt and load can't change mid-round); `DELETE` 409s while **any**
+interview references it (rounds point at a problem by id, deleting would orphan them).
+
+### `GET /portal/:token/system-design`
+No auth. The `system_design` round for the candidate: the assigned problem, the autosaved board and
+the AI-hint allowance. 404 if the interview has no such round. Never includes the submission or the
+AI evaluation, only the hiring manager sees those.
+```json
+// response 200
+{ "data": { "round_id": "uuid", "status": "pending | completed", "started_at": "date | null", "duration_minutes": 60,
+  "problem": { "id": "uuid", "title": "string", "prompt": "string", "difficulty": "string", "requirements": { ... } },
+  "board": Board, "runs_used": "number", "runs_max": 8, "ai_enabled": "boolean" }, "message": "system design round" }
+```
+
+### `POST /portal/:token/system-design/start`
+No auth. Idempotent: starts the round's 60 minute clock the first time, a repeat call returns the
+original `started_at` unchanged.
+
+### `PUT /portal/:token/system-design/board`
+No auth. Autosave. 400 before the round has started, 409 once submitted. Edges that point at a
+missing node are dropped on save; limits are 80 nodes and 250 edges.
+```json
+// request
+{ "board": Board }
+// response 200
+{ "data": { "saved_at": "date" }, "message": "board saved" }
+```
+
+### `POST /portal/:token/system-design/simulate`
+No auth. Runs the deterministic load model against the board for one scenario (`steady`, `spike`
+which multiplies the load by the problem's `peak_multiplier` and limits how fast autoscaling can
+react, or `az_failure` which takes out every non-Multi-AZ component). Streams **NDJSON**:
+```json
+{ "type": "engine", "result": SimulationResult }
+{ "type": "ai_hint", "hints": [{ "node_id": "string?", "text": "string" }], "runs_used": 1, "runs_max": 8 }
+{ "type": "ai_skipped", "reason": "not_configured | limit_reached | unavailable" }
+{ "type": "done", "runs_used": 1, "runs_max": 8 }
+{ "type": "error", "message": "string" }
+```
+`engine` always comes first and never depends on the LLM. The AI hint is capped at 8 runs per
+round (a failed or cancelled hint isn't counted). Errors before the first line (bad token, round
+not started, already submitted) are normal JSON 4xx responses.
+
+### `POST /portal/:token/system-design/submit`
+No auth. Final and one-shot (409 if already submitted). Simulates all three scenarios, asks the
+LLM for a graded evaluation (best effort, skipped for an empty board or when no key is set), stores
+everything in the round's `submissions` and flips it to `completed`. Streams NDJSON: `progress`
+(`simulating`, `evaluating`, `saving`), then `done` or `error`. Not abortable on disconnect, the
+submission must finish even if the tab closes (the timer-expiry auto-submit).
+```json
+// request
+{ "board": Board }
+```
+
+### `POST /portal/:token/system-design/focus-loss`
+No auth. Same body and behaviour as the DSA focus-loss endpoint, recorded on the system design round.
+
 ## Shapes
 
 **PublicUser** (never includes `password_hash`):
 ```json
 { "id": "uuid", "company_id": "uuid", "full_name": "string", "email": "string", "role": "super_admin | hiring_manager", "status": "pending_verification | active | inactive", "created_at": "date" }
+```
+
+**Board** (system design canvas, stored in `interview_rounds.board`):
+```json
+{ "nodes": [{ "id": "string", "type": "users | route53 | cloudfront | waf | shield | api_gateway | alb | ec2 | ecs | lambda | rds | aurora | dynamodb | elasticache | s3 | opensearch | sqs | sns | kinesis | cloudwatch | cognito",
+    "label": "string?", "position": { "x": "number", "y": "number" }, "config": { "instances": "n", "autoscaling": { "enabled": "bool", "min": "n", "max": "n" }, "multi_az": "bool", "read_replicas": "n", "cache_hit_ratio": "0..0.99", "provisioned_capacity": "rps", "concurrency_limit": "n", "size": "small | medium | large | xlarge" } }],
+  "edges": [{ "id": "string", "source": "node id", "target": "node id" }] }
+```
+
+**SimulationResult** (one scenario):
+```json
+{ "scenario": "steady | spike | az_failure", "offered_rps": "number", "success_rate": "0..1", "est_p99_ms": "number", "bottleneck_node_id": "string | null",
+  "slo": { "latency_ok": "bool", "availability_ok": "bool" },
+  "nodes": [{ "node_id": "string", "load_rps": "number", "capacity_rps": "number | null", "utilization": "number", "status": "ok | hot | failed | degraded | idle", "reason": "string" }],
+  "findings": [{ "code": "string", "severity": "critical | warning | info", "category": "capacity | reliability | security | observability | design", "node_id": "string?", "title": "string", "detail": "string" }] }
 ```
 
 **Error response**, every non-2xx:
@@ -354,7 +456,7 @@ opened the link.
 
 ## Database
 
-One Postgres database (Supabase), this repo owns eight tables. See `prisma/schema.prisma` for
+One Postgres database (Supabase), this repo owns nine tables. See `prisma/schema.prisma` for
 the exact source of truth, this is the relationship summary.
 
 ```
@@ -368,8 +470,9 @@ Candidate (1) ----( 0 or 1 ) CandidateProfile
 Job       (1) ----< (many) InterviewSession
 Candidate (1) ----( 0 or 1 ) InterviewSession        (a candidate can only be scheduled once)
 User      (1) ----< (many) InterviewSession          (created_by)
-InterviewSession (1) ----< (exactly 3) InterviewRound
+InterviewSession (1) ----< (3 or 4) InterviewRound   (4th is the optional system_design round)
 Question  (1) ----< (many) InterviewRound            (only dsa rounds have one assigned)
+SystemDesignProblem (1) ----< (many) InterviewRound   (system_design rounds only, by plain id, not an FK)
 ```
 
 - **Company**: `id, name (unique), created_at`. A tenant.
@@ -378,5 +481,6 @@ Question  (1) ----< (many) InterviewRound            (only dsa rounds have one a
 - **Candidate**: `id, job_id (FK), full_name, email (nullable), resume_file_name, resume_key, created_by (FK), created_at`. One row per uploaded resume. `resume_key` is the S3 object key, the file itself never touches Postgres. `full_name`/`email` come from the resume parser when it finds them, otherwise `full_name` falls back to the file name and `email` stays null.
 - **CandidateProfile**: `id, candidate_id (FK, unique), phone (nullable), summary (nullable), skills (JSON array of `{ category, items }`), experience (JSON array of `{ role, company, years, bullets }`), education (same shape as experience), sections (JSON array of `{ heading, entries: { title, bullets }[] }`, everything else the resume had), links (JSON array of `{ label, url }`, every PDF hyperlink found), created_at`. What the resume parser found beyond name and email, one row per candidate, created (possibly empty) at upload time regardless of whether the parse fully succeeded.
 - **InterviewSession**: `id, job_id (FK), candidate_id (FK, unique), access_token (unique), scheduled_at, status, created_by (FK), created_at`. At most one row per candidate, scheduling a second one 409s. `access_token` is generated once at creation and never rotated, it's the whole candidate portal's login-free access key.
-- **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai), sequence, status, question_ids (string array, not a real FK, see "The candidate portal" above for why), started_at (nullable), submissions (JSON, keyed by question id, nullable), created_at`. Always exactly three per session, created alongside it. Only `dsa` is implemented so far: `question_ids` is set (two questions) the first time the candidate opens that round (random pick from `Question`, then fixed), `started_at` when they click "Start", `submissions` gains an entry per question as they submit it, and `status` flips to `completed` once every question in the round has one.
+- **InterviewRound**: `id, session_id (FK), round_type (dsa | vscode | technical_ai | system_design), sequence, status, question_ids (string array, not a real FK, see "The candidate portal" above for why), started_at (nullable), submissions (JSON, keyed by question id, nullable), system_design_problem_id (nullable), board (JSON, nullable), simulation_runs (int), created_at`. Three per session, or four when a system design problem was picked, created alongside it. Only `dsa` is implemented so far: `question_ids` is set (two questions) the first time the candidate opens that round (random pick from `Question`, then fixed), `started_at` when they click "Start", `submissions` gains an entry per question as they submit it, and `status` flips to `completed` once every question in the round has one.
 - **Question**: `id, title, prompt, difficulty (easy | medium | hard), tags (string array, topic tags like "arrays"/"dynamic-programming", not company tags, this platform doesn't do company-specific sets), starter_code (JSON, one key per supported language), test_cases (JSON array of `{ input, expected_output, locked }`, the first few unlocked as worked examples, the rest locked and graded but never shown), created_at`. A global pool of original questions (not scraped from LeetCode or any other source), seeded via `npm run seed:questions`, not yet authored per-job or picked by JD relevance.
+- **SystemDesignProblem**: `id, company_id (nullable: null = global preset), created_by (nullable), title, prompt, difficulty, requirements (JSON, see "System design problems"), created_at`. Presets are seeded with `npm run seed:system-design`; companies author their own. A `system_design` round references one by plain id (like `question_ids`, not a real FK); its `submissions` holds `{ board, engine_results: { steady, spike, az_failure }, evaluation, evaluation_status, submitted_at }` once submitted, `board` holds the autosaved canvas, and `simulation_runs` counts AI-hint runs used.
