@@ -45,6 +45,13 @@ const EnvSchema = z
     // Where judge-service is reachable for grading a dsa round's test cases.
     // Not a secret, just addressing, same as core-api's own PORT.
     JUDGE_SERVICE_URL: z.string().min(1).default("http://localhost:4001"),
+
+    // LLM used by the system design round (hints + final evaluation). Optional: without a key
+    // the simulation still runs, it just has no AI commentary. Groq's API is OpenAI-compatible,
+    // so swapping provider later is a new ILlmClient, not a rewrite.
+    GROQ_API_KEY: z.string().min(1).optional(),
+    LLM_MODEL: z.string().min(1).default("llama-3.3-70b-versatile"),
+    LLM_BASE_URL: z.string().min(1).default("https://api.groq.com/openai/v1"),
   })
   .strip();
 
@@ -79,6 +86,10 @@ export const AWS_SECRET_ACCESS_KEY = env.AWS_SECRET_ACCESS_KEY;
 export const S3_BUCKET_NAME = env.S3_BUCKET_NAME;
 
 export const JUDGE_SERVICE_URL = env.JUDGE_SERVICE_URL;
+
+export const GROQ_API_KEY = env.GROQ_API_KEY;
+export const LLM_MODEL = env.LLM_MODEL;
+export const LLM_BASE_URL = env.LLM_BASE_URL;
 
 export const CORS_ORIGIN_LIST =
   env.CORS_ORIGINS?.split(",")
