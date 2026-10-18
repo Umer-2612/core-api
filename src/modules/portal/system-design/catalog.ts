@@ -105,7 +105,9 @@ const DEFS: ComponentDef[] = [
     defaults: { cache_hit_ratio: 0.8 },
     config_keys: ["cache_hit_ratio"],
   }),
-  def({ type: "waf", label: "AWS WAF", category: "security", behavior: "passthrough", capacity_model: "fixed", per_unit: 500_000, base_latency_ms: 2 }),
+  // WAF isn't throughput-limited the way a proxy is: it runs inside the CloudFront/ALB/API Gateway it is
+  // attached to and scales with them, so it's modeled as effectively unbounded.
+  def({ type: "waf", label: "AWS WAF", category: "security", behavior: "passthrough", capacity_model: "fixed", per_unit: 50_000_000, base_latency_ms: 2 }),
   def({ type: "shield", label: "AWS Shield", category: "security", behavior: "sidecar" }),
   def({
     type: "api_gateway",
