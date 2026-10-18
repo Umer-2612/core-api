@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractFromText, labelForUrl, type SkillGroup } from "@modules/candidates/resume-extractor";
+import { extractFromText, joinTextItems, labelForUrl, labelFromAnnotationRect, type PdfTextItem, type SkillGroup } from "@modules/candidates/resume-extractor";
 
 function flatSkills(groups: SkillGroup[]): string[] {
   return groups.flatMap((g) => g.items);
@@ -631,5 +631,56 @@ describe("extractFromText", () => {
 
     expect(result.sections).toEqual([]);
     expect(result.experience).toHaveLength(1);
+  });
+});
+
+/** A text run as pdf.js reports it: starts at x, is `width` wide, baseline y, 10pt text. */
+function run(str: string, x: number, width: number, y = 700): PdfTextItem {
+  return { str, width, height: 10, transform: [10, 0, 0, 10, x, y] };
+}
+
+describe("joinTextItems", () => {
+  it("puts a space between visibly separate runs on a line, so link text stops gluing to its neighbours", () => {
+    // "DocMind RAG Platform" [Live Demo] "·" [GitHub] "Python, FastAPI", each its own run with a gap between
+    const line = joinTextItems([run("DocMind RAG Platform", 0, 100), run("Live Demo", 106, 45), run("·", 156, 3), run("GitHub", 164, 30), run("Python, FastAPI", 200, 70)]);
+    expect(line).toBe("DocMind RAG Platform Live Demo · GitHub Python, FastAPI");
+  });
+
+  it("does not split a word at a kerning gap or double an existing space", () => {
+    expect(joinTextItems([run("Wo", 0, 12), run("rld", 12.4, 18)])).toBe("World");
+    expect(joinTextItems([run("Hello ", 0, 30), run("there", 36, 25)])).toBe("Hello there");
+    expect(joinTextItems([run("Hello", 0, 30), run(" there", 36, 25)])).toBe("Hello there");
+  });
+
+  it("starts a new line when the baseline changes", () => {
+    expect(joinTextItems([run("one", 0, 20, 700), run("two", 0, 20, 680)])).toBe("one\ntwo");
+  });
+
+  it("leaves runs untouched when no width is reported", () => {
+    const bare = (str: string, x: number): PdfTextItem => ({ str, transform: [10, 0, 0, 10, x, 700] });
+    expect(joinTextItems([bare("a", 0), bare("b", 50)])).toBe("ab");
+  });
+});
+
+describe("labelFromAnnotationRect", () => {
+  // email · LinkedIn · Portfolio · GitHub, the "·" separators sitting between the link rects
+  const header = [run("me@mail.com", 0, 60), run("·", 66, 3), run("LinkedIn", 75, 40), run("·", 121, 3), run("Portfolio", 130, 44), run("·", 180, 3), run("GitHub", 189, 34)];
+
+  it("labels each link with its own text, not a neighbouring separator", () => {
+    expect(labelFromAnnotationRect([74, 698, 116, 712], header)).toBe("LinkedIn");
+    expect(labelFromAnnotationRect([129, 698, 175, 712], header)).toBe("Portfolio");
+    expect(labelFromAnnotationRect([188, 698, 224, 712], header)).toBe("GitHub");
+  });
+
+  it("matches on overlap even when the run starts a little left of the rect", () => {
+    expect(labelFromAnnotationRect([80, 698, 118, 712], header)).toBe("LinkedIn");
+  });
+
+  it("returns nothing for a rect that only covers a separator, so the URL-based fallback label is used", () => {
+    expect(labelFromAnnotationRect([120, 698, 126, 712], header)).toBe("");
+  });
+
+  it("joins a multi-run label with a space", () => {
+    expect(labelFromAnnotationRect([0, 698, 100, 712], [run("Github", 0, 38), run("Repo", 44, 24)])).toBe("Github Repo");
   });
 });
