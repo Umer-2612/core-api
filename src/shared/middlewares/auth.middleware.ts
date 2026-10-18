@@ -7,14 +7,16 @@ import { SECRET_KEY } from "@shared/config/env";
 import { HttpException } from "@shared/exceptions/http.exception";
 import { toPublicUser } from "@shared/interfaces/models.interface";
 
-const getAuthorization = (req: Request): string | null => {
+/** Bearer header first, then the cookie. Both are tried so a stale header can't mask a valid cookie. */
+const getTokens = (req: Request): string[] => {
+  const tokens: string[] = [];
   const header = req.header("Authorization");
-  if (header?.startsWith("Bearer ")) return header.replace("Bearer ", "").trim();
+  if (header?.startsWith("Bearer ")) tokens.push(header.replace("Bearer ", "").trim());
 
   const cookie = (req as RequestWithUser).cookies?.Authorization;
-  if (cookie) return cookie;
+  if (cookie) tokens.push(cookie);
 
-  return null;
+  return tokens;
 };
 
 /**
@@ -23,17 +25,25 @@ const getAuthorization = (req: Request): string | null => {
  */
 export const AuthMiddleware = async (req: Request, _res: Response, next: NextFunction) => {
   try {
-    const token = getAuthorization(req);
-    if (!token) return next(new HttpException(401, "Authentication token missing"));
+    const tokens = getTokens(req);
+    if (tokens.length === 0) return next(new HttpException(401, "Authentication token missing"));
 
-    let payload: DataStoredInToken;
-    try {
-      payload = verify(token, SECRET_KEY) as DataStoredInToken;
-    } catch (err) {
-      if (err instanceof TokenExpiredError) return next(new HttpException(401, "Authentication token expired"));
-      if (err instanceof JsonWebTokenError) return next(new HttpException(401, "Invalid authentication token"));
-      return next(new HttpException(401, "Authentication failed"));
+    let payload: DataStoredInToken | null = null;
+    let failure: HttpException | null = null;
+    for (const token of tokens) {
+      try {
+        payload = verify(token, SECRET_KEY) as DataStoredInToken;
+        break;
+      } catch (err) {
+        failure ??=
+          err instanceof TokenExpiredError
+            ? new HttpException(401, "Authentication token expired")
+            : err instanceof JsonWebTokenError
+              ? new HttpException(401, "Invalid authentication token")
+              : new HttpException(401, "Authentication failed");
+      }
     }
+    if (!payload) return next(failure ?? new HttpException(401, "Authentication failed"));
 
     const usersRepository = container.resolve(UsersRepository);
     const user = await usersRepository.findById(payload.id);
