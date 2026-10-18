@@ -5,6 +5,8 @@ import { prisma } from "@/db/prisma";
 
 export interface ISystemDesignRepository {
   findProblemById(id: string): Promise<SystemDesignProblem | null>;
+  /** Sets `started_at` only if it is still unset and returns the winning start time either way. */
+  startRoundOnce(roundId: string): Promise<Date>;
   saveBoard(roundId: string, board: Board): Promise<void>;
   /** Atomically takes one of the round's capped AI-hint runs. False when none are left. */
   reserveSimulationRun(roundId: string, cap: number): Promise<boolean>;
@@ -20,6 +22,12 @@ export interface ISystemDesignRepository {
 export class SystemDesignRepository implements ISystemDesignRepository {
   async findProblemById(id: string): Promise<SystemDesignProblem | null> {
     return prisma.systemDesignProblem.findUnique({ where: { id } });
+  }
+
+  async startRoundOnce(roundId: string): Promise<Date> {
+    await prisma.interviewRound.updateMany({ where: { id: roundId, started_at: null }, data: { started_at: new Date() } });
+    const round = await prisma.interviewRound.findUniqueOrThrow({ where: { id: roundId }, select: { started_at: true } });
+    return round.started_at!;
   }
 
   async saveBoard(roundId: string, board: Board): Promise<void> {

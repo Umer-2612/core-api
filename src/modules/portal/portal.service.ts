@@ -19,6 +19,9 @@ import type {
   TestCase,
 } from "@shared/interfaces/models.interface";
 
+/** Plenty to show a hiring manager the pattern; stops a script from bloating the JSON column. */
+const MAX_FOCUS_LOSS_EVENTS = 200;
+
 export interface PortalOverview {
   candidate_name: string;
   job_title: string;
@@ -216,7 +219,11 @@ export class PortalService {
 
     const durationMs = Math.max(0, new Date(data.returned_at).getTime() - new Date(data.left_at).getTime());
     const existing = (round.focus_loss_events as unknown as FocusLossEvent[] | null) ?? [];
-    const nextEvents = [...existing, { left_at: data.left_at, returned_at: data.returned_at, duration_ms: durationMs }];
+    // The endpoint is unauthenticated, so bound what one token can make us store.
+    const nextEvents =
+      existing.length >= MAX_FOCUS_LOSS_EVENTS
+        ? existing
+        : [...existing, { left_at: data.left_at, returned_at: data.returned_at, duration_ms: durationMs }];
 
     await this.portalRepository.saveFocusLossEvents(round.id, nextEvents);
     return { count: nextEvents.length };

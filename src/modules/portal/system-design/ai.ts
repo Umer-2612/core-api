@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CATALOG } from "@modules/portal/system-design/catalog";
+import { cleanLabel } from "@modules/portal/system-design/labels";
 import type { Board, ProblemRequirements, Scenario, SimulationResult } from "@modules/portal/system-design/types";
 import { LlmUnavailableError, type ILlmClient } from "@shared/llm/llm-client";
 import { logger } from "@shared/utils/logger";
@@ -38,7 +39,7 @@ function describeBoard(board: Board): string {
   const nodes = board.nodes.map((n) => {
     const def = CATALOG[n.type];
     const cfg = n.config && Object.keys(n.config).length > 0 ? ` config=${JSON.stringify(n.config)}` : "";
-    return `- ${n.id}: ${def?.label ?? n.type}${n.label ? ` ("${n.label.slice(0, 60)}")` : ""}${cfg}`;
+    return `- ${n.id}: ${def?.label ?? n.type}${cleanLabel(n.label) ? ` ("${cleanLabel(n.label)}")` : ""}${cfg}`;
   });
   const edges = board.edges.map((e) => `- ${e.source} -> ${e.target}`);
   return `Nodes:\n${nodes.join("\n") || "(none)"}\nEdges:\n${edges.join("\n") || "(none)"}`;

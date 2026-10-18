@@ -1,4 +1,5 @@
 import { CATALOG, SIZE_MULTIPLIER, type ComponentDef } from "@modules/portal/system-design/catalog";
+import { cleanLabel } from "@modules/portal/system-design/labels";
 import {
   SCENARIOS,
   type Board,
@@ -87,7 +88,7 @@ function buildGraph(board: Board): Graph {
       continue;
     }
     if (nodes.has(node.id)) continue;
-    nodes.set(node.id, { node, def, cfg: resolveConfig(def, node.config), label: node.label?.trim() || def.label });
+    nodes.set(node.id, { node, def, cfg: resolveConfig(def, node.config), label: cleanLabel(node.label) || def.label });
   }
 
   const out = new Map<string, string[]>();

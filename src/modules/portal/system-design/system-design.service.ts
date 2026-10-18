@@ -48,6 +48,9 @@ export class SystemDesignPortalService {
   private readonly portalRepository: IPortalRepository;
   private readonly repository: ISystemDesignRepository;
   private readonly ai: SystemDesignAi;
+  /** Rounds with a submission in flight. Stops N parallel submits from each paying for an LLM evaluation
+   * before the database settles which one wins. Per process; completeRound is still the final arbiter. */
+  private readonly submitting = new Set<string>();
 
   constructor(portalRepository?: IPortalRepository, repository?: ISystemDesignRepository, ai?: SystemDesignAi) {
     this.portalRepository = portalRepository ?? container.resolve(PortalRepository);
@@ -101,8 +104,9 @@ export class SystemDesignPortalService {
   public async startRound(token: string): Promise<{ started_at: string }> {
     const { round } = await this.getSessionAndRound(token);
     if (round.started_at) return { started_at: round.started_at.toISOString() };
-    const started = await this.portalRepository.startRound(round.id);
-    return { started_at: started.started_at!.toISOString() };
+    // Atomic: two parallel first clicks must not overwrite each other's start time (that would reset the clock).
+    const started = await this.repository.startRoundOnce(round.id);
+    return { started_at: started.toISOString() };
   }
 
   public async saveBoard(token: string, board: Board): Promise<void> {
@@ -128,9 +132,12 @@ export class SystemDesignPortalService {
       if (hint) {
         emit({ type: "ai_hint", hints: hint.hints, runs_used: runsUsed, runs_max: MAX_AI_HINT_RUNS });
       } else {
-        // The model failed or the candidate left: don't charge them a hint run for nothing.
-        await this.repository.releaseSimulationRun(round.id);
-        runsUsed -= 1;
+        // Give the run back only when the provider failed. If the candidate disconnected, the LLM call was
+        // already started (and billed), so refunding would let a client abort-and-retry for unlimited free calls.
+        if (!signal?.aborted) {
+          await this.repository.releaseSimulationRun(round.id);
+          runsUsed -= 1;
+        }
         emit({ type: "ai_skipped", reason: "unavailable" });
       }
     }
@@ -150,6 +157,21 @@ export class SystemDesignPortalService {
    * effort) and stores everything for the hiring manager. The candidate never sees the evaluation. */
   public async submit(token: string, board: Board, emit: (event: SubmitEvent) => void): Promise<void> {
     const { round, problem } = await this.getActiveRound(token);
+    if (this.submitting.has(round.id)) throw new HttpException(409, "This round is already being submitted");
+    this.submitting.add(round.id);
+    try {
+      await this.submitRound(round, problem, board, emit);
+    } finally {
+      this.submitting.delete(round.id);
+    }
+  }
+
+  private async submitRound(
+    round: InterviewRound,
+    problem: { context: ProblemContext },
+    board: Board,
+    emit: (event: SubmitEvent) => void,
+  ): Promise<void> {
 
     emit({ type: "progress", stage: "simulating" });
     const engineResults = simulateAll(board, problem.context.requirements);

@@ -78,6 +78,7 @@ function setup(round: InterviewRound, opts: { aiConfigured?: boolean } = {}): Se
   const portal = { findSessionByToken: vi.fn().mockResolvedValue(makeSession(round)), startRound: vi.fn() };
   const repo = {
     findProblemById: vi.fn().mockResolvedValue(PROBLEM),
+    startRoundOnce: vi.fn().mockResolvedValue(new Date("2026-02-02T00:00:00Z")),
     saveBoard: vi.fn().mockResolvedValue(undefined),
     reserveSimulationRun: vi.fn().mockResolvedValue(true),
     releaseSimulationRun: vi.fn().mockResolvedValue(undefined),
@@ -132,8 +133,9 @@ describe("SystemDesignPortalService", () => {
 
     it("starts the clock the first time", async () => {
       ctx = setup(makeRound({ started_at: null }));
-      ctx.portal.startRound.mockResolvedValue(makeRound({ started_at: new Date("2026-02-02T00:00:00Z") }));
       expect((await ctx.service.startRound("tok")).started_at).toBe("2026-02-02T00:00:00.000Z");
+      expect(ctx.repo.startRoundOnce).toHaveBeenCalledWith("round-sd");
+      expect(ctx.portal.startRound).not.toHaveBeenCalled();
     });
   });
 
@@ -183,6 +185,17 @@ describe("SystemDesignPortalService", () => {
       expect(ctx.llm.completeJson).not.toHaveBeenCalled();
     });
 
+    it("does not refund the hint run when the candidate disconnects mid-call (the LLM call was already billed)", async () => {
+      const controller = new AbortController();
+      ctx.llm.completeJson.mockImplementation(async () => {
+        controller.abort();
+        throw new LlmUnavailableError("aborted");
+      });
+      const events = await collect((emit) => ctx.service.simulate("tok", BOARD, "steady", emit, controller.signal));
+      expect(ctx.repo.releaseSimulationRun).not.toHaveBeenCalled();
+      expect(events[events.length - 1]).toMatchObject({ type: "done", runs_used: 1 });
+    });
+
     it("gives the hint run back when the model fails", async () => {
       ctx.llm.completeJson.mockRejectedValue(new LlmUnavailableError("down"));
       const events = await collect((emit) => ctx.service.simulate("tok", BOARD, "steady", emit));
@@ -220,6 +233,21 @@ describe("SystemDesignPortalService", () => {
       await ctx.service.submit("tok", { nodes: [], edges: [] }, () => undefined);
       expect(ctx.llm.completeJson).not.toHaveBeenCalled();
       expect(ctx.repo.completeRound.mock.calls[0][1].evaluation_status).toBe("skipped");
+    });
+
+    it("rejects a second submit while one is in flight, so only one LLM evaluation is paid for", async () => {
+      let release!: () => void;
+      ctx.llm.completeJson.mockImplementation(() => new Promise((resolve) => { release = () => resolve(evaluation); }));
+      const first = ctx.service.submit("tok", BOARD, () => undefined);
+      await vi.waitFor(() => expect(ctx.llm.completeJson).toHaveBeenCalledTimes(1));
+      await expect(ctx.service.submit("tok", BOARD, () => undefined)).rejects.toMatchObject({ status: 409 });
+      release();
+      await first;
+      expect(ctx.llm.completeJson).toHaveBeenCalledTimes(1);
+      // the guard is released afterwards, so a later attempt reaches the database check again
+      ctx.llm.completeJson.mockResolvedValue(evaluation);
+      ctx.repo.completeRound.mockResolvedValue(null);
+      await expect(ctx.service.submit("tok", BOARD, () => undefined)).rejects.toMatchObject({ status: 409, message: "This round has already been submitted" });
     });
 
     it("409s when another request already completed the round", async () => {

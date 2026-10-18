@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { COMPONENT_TYPES } from "@modules/portal/system-design/catalog";
-import { SCENARIOS, type Board } from "@modules/portal/system-design/types";
+import type { Board } from "@modules/portal/system-design/types";
 
 /** A saved board may carry nulls where the UI cleared a numeric field; treat those as "unset". */
 const opt = <T extends z.ZodTypeAny>(schema: T) => schema.nullish().transform((v) => (v ?? undefined) as z.output<T> | undefined);
@@ -30,7 +30,8 @@ export const boardSchema = z
     nodes: z
       .array(
         z.object({
-          id: z.string().min(1).max(64),
+          // ids are echoed into the LLM prompt, so keep them to a boring charset (no newlines or prose).
+          id: z.string().regex(/^[A-Za-z0-9_.:-]{1,64}$/, "Node ids may only use letters, numbers and _ . : -"),
           type: z.enum(COMPONENT_TYPES),
           label: opt(z.string().max(60)),
           position: opt(z.object({ x: z.number().finite(), y: z.number().finite() })),
@@ -38,7 +39,7 @@ export const boardSchema = z
         }),
       )
       .max(MAX_BOARD_NODES),
-    edges: z.array(z.object({ id: z.string().min(1).max(130), source: z.string().min(1).max(64), target: z.string().min(1).max(64) })).max(MAX_BOARD_EDGES),
+    edges: z.array(z.object({ id: z.string().min(1).max(140), source: z.string().min(1).max(64), target: z.string().min(1).max(64) })).max(MAX_BOARD_EDGES),
   })
   .superRefine((board, ctx) => {
     if (new Set(board.nodes.map((n) => n.id)).size !== board.nodes.length) {
@@ -63,7 +64,7 @@ export const requirementsSchema = z.object({
   availability_slo: z.number().min(50).max(100),
 });
 
-export const scenarioSchema = z.enum(SCENARIOS as [string, ...string[]]) as unknown as z.ZodEnum<["steady", "spike", "az_failure"]>;
+export const scenarioSchema = z.enum(["steady", "spike", "az_failure"]);
 
 // PUT  /portal/:token/system-design/board
 export const saveBoardSchema = z.object({ board: boardSchema });
