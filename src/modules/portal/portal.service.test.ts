@@ -27,6 +27,9 @@ function makeRound(overrides: Partial<InterviewRound> = {}): InterviewRound {
     started_at: null,
     submissions: null,
     focus_loss_events: null,
+    system_design_problem_id: null,
+    board: null,
+    simulation_runs: 0,
     created_at: new Date(),
     ...overrides,
   };

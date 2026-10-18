@@ -28,6 +28,7 @@ enum InterviewRoundType {
   dsa
   vscode
   technical_ai
+  system_design
 }
 
 enum InterviewRoundStatus {
@@ -159,11 +160,21 @@ model InterviewRound {
   /// fullscreen (alt-tab, minimize, switching apps) and came back. Warn +
   /// log only, nothing here blocks the candidate or auto-fails the round.
   focus_loss_events Json?
+  /// Only set for a `system_design` round: the SystemDesignProblem assigned at
+  /// scheduling time. Plain id, not a real FK, same convention as `question_ids`.
+  system_design_problem_id String?
+  /// Only for a `system_design` round: the autosaved canvas, `{ nodes, edges }`,
+  /// so a refresh doesn't lose the candidate's work.
+  board        Json?
+  /// How many simulation runs (with an AI hint) the candidate has used, capped
+  /// so the LLM isn't hammered. The engine result itself is never capped.
+  simulation_runs Int               @default(0)
   created_at   DateTime             @default(now())
 
   session InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
 
   @@index([session_id])
+  @@index([system_design_problem_id])
   @@map("interview_rounds")
 }
 
@@ -186,6 +197,24 @@ model Question {
   created_at   DateTime           @default(now())
 
   @@map("questions")
+}
+
+/// A system design problem a candidate can be assigned in a `system_design`
+/// round. `company_id` null = a global preset (read-only), otherwise authored by
+/// that company's hiring managers.
+model SystemDesignProblem {
+  id           String             @id @default(uuid())
+  company_id   String?
+  created_by   String?
+  title        String
+  prompt       String
+  difficulty   QuestionDifficulty @default(medium)
+  /// `{ target_rps, read_ratio, peak_multiplier, data_size_gb, latency_slo_ms, availability_slo }`
+  requirements Json
+  created_at   DateTime           @default(now())
+
+  @@index([company_id])
+  @@map("system_design_problems")
 }
 
 /// What the resume extractor pulled out of the PDF text, beyond the name and

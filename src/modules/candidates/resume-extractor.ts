@@ -248,35 +248,68 @@ export function labelForUrl(url: string): string {
   }
 }
 
-/** Mirrors pdf-parse's default page-render text join exactly (same
- * newline-on-Y-change logic) so hooking it for annotations doesn't change
- * what extractFromText sees. */
-function joinTextItems(items: Array<{ str: string; transform: number[] }>): string {
+export interface PdfTextItem {
+  str: string;
+  transform: number[];
+  width?: number;
+  height?: number;
+}
+
+/** A gap wider than this (as a share of the text height) between two runs on the same line is a visible
+ * word space; kerning gaps inside a word are far smaller. */
+const WORD_GAP_RATIO = 0.18;
+
+function needsSpaceBetween(prev: PdfTextItem, item: PdfTextItem): boolean {
+  if (!prev.str || !item.str || /\s$/.test(prev.str) || /^\s/.test(item.str)) return false;
+  // Without a measured width we can't tell a gap from a kern, so leave the text as it was.
+  if (!Number.isFinite(prev.width) || !prev.width) return false;
+  const size = Math.abs(item.transform[3]) || item.height || 10;
+  return item.transform[4] - (prev.transform[4] + prev.width) > size * WORD_GAP_RATIO;
+}
+
+/** Same newline-on-Y-change join pdf-parse does by default, plus a space where two runs on one line are
+ * visibly apart. Resumes put "Live Demo", a "·" and the tech stack in separate runs (links are their own
+ * run), and joining them bare produced "PlatformLive Demo· GitHub Python". */
+export function joinTextItems(items: PdfTextItem[]): string {
   let lastY: number | undefined;
+  let prev: PdfTextItem | undefined;
   let text = "";
   for (const item of items) {
-    text += lastY === item.transform[5] || lastY === undefined ? item.str : `\n${item.str}`;
+    if (lastY === undefined || lastY === item.transform[5]) {
+      text += (prev && lastY !== undefined && needsSpaceBetween(prev, item) ? " " : "") + item.str;
+    } else {
+      text += `\n${item.str}`;
+    }
     lastY = item.transform[5];
+    prev = item;
   }
   return text;
 }
 
 /** The exact resume text a link is attached to, e.g. "LinkedIn" or "Github
  * Repo": a link annotation's rect gives its position on the page, and a text
- * item's transform gives its own, so the text items whose position falls
- * inside the link's rect are what's actually underlined/clickable. This is
- * what makes the link attach to the resume's own wording instead of a
- * synthetic domain-based label. */
-function labelFromAnnotationRect(rect: number[], items: Array<{ str: string; transform: number[] }>): string {
+ * item's transform and width give its own, so the runs that overlap the rect
+ * are what's actually underlined/clickable. This is what makes the link
+ * attach to the resume's own wording instead of a synthetic domain-based label.
+ *
+ * Overlap, not just the run's start point: in "LinkedIn · Portfolio · GitHub" the separators sit right
+ * next to each link's rect, and matching on start x alone could label a link with its neighbouring "·".
+ * Runs with no letters or digits (separators, bullets) are never a label. */
+export function labelFromAnnotationRect(rect: number[], items: PdfTextItem[]): string {
   const [x0, y0, x1, y1] = rect;
-  return items
-    .filter((it) => {
-      const x = it.transform[4];
-      const y = it.transform[5];
-      return x >= x0 - 2 && x <= x1 + 2 && y >= y0 - 2 && y <= y1 + 2;
-    })
-    .map((it) => it.str)
-    .join("")
+  const hit = items.filter((it) => {
+    if (!/[\p{L}\p{N}]/u.test(it.str)) return false;
+    const x = it.transform[4];
+    const y = it.transform[5];
+    if (y < y0 - 2 || y > y1 + 2) return false;
+    const width = it.width ?? 0;
+    if (!(width > 0)) return x >= x0 - 2 && x <= x1 + 2;
+    const overlap = Math.min(x + width, x1) - Math.max(x, x0);
+    return overlap > Math.min(width, x1 - x0) * 0.5;
+  });
+  return joinTextItems(hit)
+    .replace(/\s+/g, " ")
+    .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")
     .trim();
 }
 

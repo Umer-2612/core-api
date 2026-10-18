@@ -10,7 +10,9 @@ import type {
 import { InterviewSessionsService } from "@modules/interview-sessions/interview-sessions.service";
 import type { CreateJobData, IJobsRepository } from "@modules/jobs/jobs.repository";
 import { JobsService } from "@modules/jobs/jobs.service";
-import type { Candidate, InterviewSessionWithRounds, Job, PublicUser } from "@shared/interfaces/models.interface";
+import type { ISystemDesignProblemsRepository } from "@modules/system-design-problems/system-design-problems.repository";
+import { SystemDesignProblemsService } from "@modules/system-design-problems/system-design-problems.service";
+import type { Candidate, InterviewSessionWithRounds, Job, PublicUser, SystemDesignProblem } from "@shared/interfaces/models.interface";
 
 function makeJob(overrides: Partial<Job> = {}): Job {
   return {
@@ -72,6 +74,9 @@ function makeSession(overrides: Partial<InterviewSessionWithRounds> = {}): Inter
         started_at: null,
         submissions: null,
         focus_loss_events: null,
+        system_design_problem_id: null,
+        board: null,
+        simulation_runs: 0,
         created_at: new Date(),
       },
       {
@@ -84,6 +89,9 @@ function makeSession(overrides: Partial<InterviewSessionWithRounds> = {}): Inter
         started_at: null,
         submissions: null,
         focus_loss_events: null,
+        system_design_problem_id: null,
+        board: null,
+        simulation_runs: 0,
         created_at: new Date(),
       },
       {
@@ -96,6 +104,9 @@ function makeSession(overrides: Partial<InterviewSessionWithRounds> = {}): Inter
         started_at: null,
         submissions: null,
         focus_loss_events: null,
+        system_design_problem_id: null,
+        board: null,
+        simulation_runs: 0,
         created_at: new Date(),
       },
     ],
@@ -154,8 +165,30 @@ class UnusedCandidateProfileRepository implements ICandidateProfileRepository {
   }
 }
 
+class FakeProblemsRepository implements Pick<ISystemDesignProblemsRepository, "findById"> {
+  problems: SystemDesignProblem[] = [];
+  async findById(id: string) {
+    return this.problems.find((p) => p.id === id) ?? null;
+  }
+}
+
+function makeProblem(overrides: Partial<SystemDesignProblem> = {}): SystemDesignProblem {
+  return {
+    id: "11111111-1111-4111-8111-111111111111",
+    company_id: null,
+    created_by: null,
+    title: "URL Shortener",
+    prompt: "Design it",
+    difficulty: "easy",
+    requirements: {},
+    created_at: new Date("2026-01-01T00:00:00Z"),
+    ...overrides,
+  };
+}
+
 class FakeInterviewSessionsRepository implements IInterviewSessionsRepository {
   sessions: InterviewSessionWithRounds[] = [];
+  lastCreate?: CreateInterviewSessionData;
   async findById(id: string) {
     return this.sessions.find((s) => s.id === id) ?? null;
   }
@@ -163,7 +196,8 @@ class FakeInterviewSessionsRepository implements IInterviewSessionsRepository {
     return this.sessions.filter((s) => s.candidate_id === candidateId);
   }
   async create(data: CreateInterviewSessionData) {
-    const session = makeSession({ id: `session-${this.sessions.length + 1}`, ...data });
+    this.lastCreate = data;
+    const session = makeSession({ id: `session-${this.sessions.length + 1}`, job_id: data.job_id, candidate_id: data.candidate_id });
     this.sessions.push(session);
     return session;
   }
@@ -173,9 +207,11 @@ describe("InterviewSessionsService", () => {
   let jobsRepo: FakeJobsRepository;
   let candidatesRepo: FakeCandidatesRepository;
   let sessionsRepo: FakeInterviewSessionsRepository;
+  let problemsRepo: FakeProblemsRepository;
   let service: InterviewSessionsService;
 
   beforeEach(() => {
+    problemsRepo = new FakeProblemsRepository();
     jobsRepo = new FakeJobsRepository();
     candidatesRepo = new FakeCandidatesRepository();
     sessionsRepo = new FakeInterviewSessionsRepository();
@@ -189,7 +225,46 @@ describe("InterviewSessionsService", () => {
       new UnusedResumeStorage(),
       new UnusedCandidateProfileRepository(),
     );
-    service = new InterviewSessionsService(sessionsRepo, candidatesService);
+    service = new InterviewSessionsService(
+      sessionsRepo,
+      candidatesService,
+      new SystemDesignProblemsService(problemsRepo as unknown as ISystemDesignProblemsRepository),
+    );
+  });
+
+  describe("schedule with a system design problem", () => {
+    const SCHEDULE = { scheduled_at: "2026-02-01T10:00:00Z" };
+
+    it("passes a preset problem through so a fourth round is created", async () => {
+      const problem = makeProblem();
+      problemsRepo.problems.push(problem);
+      await service.schedule("job-1", "candidate-1", { ...SCHEDULE, system_design_problem_id: problem.id }, makeUser());
+      expect(sessionsRepo.lastCreate?.system_design_problem_id).toBe(problem.id);
+    });
+
+    it("accepts the hiring manager's own company's problem", async () => {
+      const problem = makeProblem({ id: "22222222-2222-4222-8222-222222222222", company_id: "company-1" });
+      problemsRepo.problems.push(problem);
+      await service.schedule("job-1", "candidate-1", { ...SCHEDULE, system_design_problem_id: problem.id }, makeUser());
+      expect(sessionsRepo.lastCreate?.system_design_problem_id).toBe(problem.id);
+    });
+
+    it("rejects another company's problem and unknown ids, and creates nothing", async () => {
+      const foreign = makeProblem({ id: "33333333-3333-4333-8333-333333333333", company_id: "company-2" });
+      problemsRepo.problems.push(foreign);
+      await expect(
+        service.schedule("job-1", "candidate-1", { ...SCHEDULE, system_design_problem_id: foreign.id }, makeUser()),
+      ).rejects.toMatchObject({ status: 403 });
+      await expect(
+        service.schedule("job-1", "candidate-1", { ...SCHEDULE, system_design_problem_id: "44444444-4444-4444-8444-444444444444" }, makeUser()),
+      ).rejects.toMatchObject({ status: 404 });
+      expect(sessionsRepo.sessions).toHaveLength(0);
+    });
+
+    it("leaves the problem unset when none is picked", async () => {
+      await service.schedule("job-1", "candidate-1", SCHEDULE, makeUser());
+      expect(sessionsRepo.lastCreate?.system_design_problem_id).toBeUndefined();
+    });
   });
 
   describe("schedule", () => {

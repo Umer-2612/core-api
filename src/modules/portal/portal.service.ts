@@ -19,6 +19,9 @@ import type {
   TestCase,
 } from "@shared/interfaces/models.interface";
 
+/** Plenty to show a hiring manager the pattern; stops a script from bloating the JSON column. */
+const MAX_FOCUS_LOSS_EVENTS = 200;
+
 export interface PortalOverview {
   candidate_name: string;
   job_title: string;
@@ -208,15 +211,19 @@ export class PortalService {
   /** Warn-and-log proctoring only: records one away period (tab/fullscreen lost focus,
    * then came back) on the round, never blocks the candidate or changes grading. Returns
    * the running count so the client can show "you've left N times" for transparency. */
-  public async reportFocusLoss(token: string, data: ReportFocusLossDto): Promise<{ count: number }> {
+  public async reportFocusLoss(token: string, data: ReportFocusLossDto, roundType: InterviewRoundType = "dsa"): Promise<{ count: number }> {
     const session = await this.getSessionOrThrow(token);
-    const round = this.findRoundOrThrow(session, "dsa");
+    const round = this.findRoundOrThrow(session, roundType);
 
     if (!round.started_at) throw new HttpException(400, "The round hasn't started yet");
 
     const durationMs = Math.max(0, new Date(data.returned_at).getTime() - new Date(data.left_at).getTime());
     const existing = (round.focus_loss_events as unknown as FocusLossEvent[] | null) ?? [];
-    const nextEvents = [...existing, { left_at: data.left_at, returned_at: data.returned_at, duration_ms: durationMs }];
+    // The endpoint is unauthenticated, so bound what one token can make us store.
+    const nextEvents =
+      existing.length >= MAX_FOCUS_LOSS_EVENTS
+        ? existing
+        : [...existing, { left_at: data.left_at, returned_at: data.returned_at, duration_ms: durationMs }];
 
     await this.portalRepository.saveFocusLossEvents(round.id, nextEvents);
     return { count: nextEvents.length };

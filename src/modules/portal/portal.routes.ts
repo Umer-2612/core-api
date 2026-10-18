@@ -2,6 +2,8 @@ import { Router } from "express";
 import { container, injectable } from "tsyringe";
 import { reportFocusLossSchema, runDsaTestsSchema, submitDsaQuestionSchema } from "@modules/portal/portal.dto";
 import { PortalController } from "@modules/portal/portal.controller";
+import { saveBoardSchema, simulateSchema, submitSystemDesignSchema } from "@modules/portal/system-design/schemas";
+import { SystemDesignPortalController } from "@modules/portal/system-design/system-design.controller";
 import { ValidationMiddleware } from "@shared/middlewares/validation.middleware";
 import type { Routes } from "@shared/interfaces/routes.interface";
 
@@ -12,9 +14,11 @@ export class PortalRoute implements Routes {
   public router: Router = Router();
   public path = "/portal";
   private readonly portalController: PortalController;
+  private readonly systemDesignController: SystemDesignPortalController;
 
   constructor() {
     this.portalController = container.resolve(PortalController);
+    this.systemDesignController = container.resolve(SystemDesignPortalController);
     this.initializeRoutes();
   }
 
@@ -33,5 +37,12 @@ export class PortalRoute implements Routes {
       this.portalController.submitDsaQuestion,
     );
     this.router.post("/:token/dsa/focus-loss", ValidationMiddleware(reportFocusLossSchema), this.portalController.reportFocusLoss);
+
+    this.router.get("/:token/system-design", this.systemDesignController.getRound);
+    this.router.post("/:token/system-design/start", this.systemDesignController.startRound);
+    this.router.put("/:token/system-design/board", ValidationMiddleware(saveBoardSchema), this.systemDesignController.saveBoard);
+    this.router.post("/:token/system-design/simulate", ValidationMiddleware(simulateSchema), this.systemDesignController.simulate);
+    this.router.post("/:token/system-design/submit", ValidationMiddleware(submitSystemDesignSchema), this.systemDesignController.submit);
+    this.router.post("/:token/system-design/focus-loss", ValidationMiddleware(reportFocusLossSchema), this.systemDesignController.reportFocusLoss);
   }
 }
