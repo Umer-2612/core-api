@@ -208,9 +208,9 @@ export class PortalService {
   /** Warn-and-log proctoring only: records one away period (tab/fullscreen lost focus,
    * then came back) on the round, never blocks the candidate or changes grading. Returns
    * the running count so the client can show "you've left N times" for transparency. */
-  public async reportFocusLoss(token: string, data: ReportFocusLossDto): Promise<{ count: number }> {
+  public async reportFocusLoss(token: string, data: ReportFocusLossDto, roundType: InterviewRoundType = "dsa"): Promise<{ count: number }> {
     const session = await this.getSessionOrThrow(token);
-    const round = this.findRoundOrThrow(session, "dsa");
+    const round = this.findRoundOrThrow(session, roundType);
 
     if (!round.started_at) throw new HttpException(400, "The round hasn't started yet");
 

@@ -23,10 +23,16 @@ import { PortalController } from "@modules/portal/portal.controller";
 import { PortalRepository } from "@modules/portal/portal.repository";
 import { PortalRoute } from "@modules/portal/portal.routes";
 import { PortalService } from "@modules/portal/portal.service";
+import { SystemDesignAi } from "@modules/portal/system-design/ai";
+import { SystemDesignPortalController } from "@modules/portal/system-design/system-design.controller";
+import { SystemDesignRepository } from "@modules/portal/system-design/system-design.repository";
+import { SystemDesignPortalService } from "@modules/portal/system-design/system-design.service";
 import { UsersController } from "@modules/users/users.controller";
 import { UsersRepository } from "@modules/users/users.repository";
 import { UsersRoute } from "@modules/users/users.routes";
 import { UsersService } from "@modules/users/users.service";
+
+import { GroqClient } from "@shared/llm/llm-client";
 
 let isContainerInitialized = false;
 
@@ -42,6 +48,8 @@ export function setupContainer() {
   const interviewSessionsRepository = new InterviewSessionsRepository();
   const portalRepository = new PortalRepository();
   const resumeStorage = new S3ResumeStorage();
+  const systemDesignRepository = new SystemDesignRepository();
+  const systemDesignAi = new SystemDesignAi(new GroqClient());
 
   container.registerInstance(UsersRepository, usersRepository);
   container.registerInstance(CompaniesRepository, companiesRepository);
@@ -51,6 +59,8 @@ export function setupContainer() {
   container.registerInstance(InterviewSessionsRepository, interviewSessionsRepository);
   container.registerInstance(PortalRepository, portalRepository);
   container.registerInstance(S3ResumeStorage, resumeStorage);
+  container.registerInstance(SystemDesignRepository, systemDesignRepository);
+  container.registerInstance(SystemDesignAi, systemDesignAi);
 
   // Business layer: services.
   const authService = new AuthService(usersRepository, companiesRepository);
@@ -60,6 +70,7 @@ export function setupContainer() {
   const companiesService = new CompaniesService(companiesRepository, usersRepository);
   const interviewSessionsService = new InterviewSessionsService(interviewSessionsRepository, candidatesService);
   const portalService = new PortalService(portalRepository);
+  const systemDesignPortalService = new SystemDesignPortalService(portalRepository, systemDesignRepository, systemDesignAi);
 
   container.registerInstance(AuthService, authService);
   container.registerInstance(UsersService, usersService);
@@ -68,6 +79,7 @@ export function setupContainer() {
   container.registerInstance(CompaniesService, companiesService);
   container.registerInstance(InterviewSessionsService, interviewSessionsService);
   container.registerInstance(PortalService, portalService);
+  container.registerInstance(SystemDesignPortalService, systemDesignPortalService);
 
   // Presentation layer: controllers and routes (auto-injected).
   container.registerSingleton(AuthController);
@@ -77,6 +89,7 @@ export function setupContainer() {
   container.registerSingleton(CompaniesController);
   container.registerSingleton(InterviewSessionsController);
   container.registerSingleton(PortalController);
+  container.registerSingleton(SystemDesignPortalController);
   container.registerSingleton(AuthRoute);
   container.registerSingleton(UsersRoute);
   container.registerSingleton(JobsRoute);
